@@ -119,8 +119,7 @@ thrift.server.TServer.TThreadPoolServer # 使用固定数量的线程池来服�
 thrift.server.TServer.TThreadedServer   # 每个连接产生一个新的线程
 ```
 
-
-
 ### 参考
 
+[测试代码](https://github.com/fenghui2013/myblog_source/tree/master/python/thrift_test)
 [TThreadedServer VS TNonblockingServer](https://github.com/m1ch1/mapkeeper/wiki/TThreadedServer-vs.-TNonblockingServer)

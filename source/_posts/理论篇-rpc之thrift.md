@@ -110,12 +110,12 @@ thrift.protocol.TCompactProtocol
 服务器层:
 thrift.server.TServer                   # 接口
 thrift.server.THttpServer               # 基于http协议的服务
-thrift.server.TNonblockingServer.TNonblockingServer  #
-thrift.server.TProcessPoolServer
+thrift.server.TNonblockingServer.TNonblockingServer  # 基于事件的服务器模型
+thrift.server.TProcessPoolServer.TProcessPoolServer  # 进程池服务器模型
 
 thrift.server.TServer.TForkingServer    # 为每个请求创建一个新进程
 thrift.server.TServer.TSimpleServer     # 单线程
-thrift.server.TServer.TThreadPoolServer # 使用固定数量的线程池来服务请求
+thrift.server.TServer.TThreadPoolServer # 线程池服务器模型
 thrift.server.TServer.TThreadedServer   # 每个连接产生一个新的线程
 ```
 

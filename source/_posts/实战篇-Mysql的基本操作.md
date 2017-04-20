@@ -1,0 +1,94 @@
+---
+title: 实战篇-Mysql的基本操作
+date: 2017-03-26 20:17:46
+tags:
+	- mysql
+	- 基本操作
+---
+### 服务启动
+#### Ubuntu环境
+
+```
+/etc/init.d/mysql status
+/etc/init.d/mysql start
+/etc/init.d/mysql stop
+/setc/init.d/mysql restart
+```
+
+### 用户相关
+mysql库 user表
+
+```
+select user, host from user;
+create user username identified by 'password';     #创建用户
+rename user username1 to username2;                #重命名用户
+drop user username;                                #删除用户
+set password for username=password('newpassword'); #更新用户密码
+show grants for username;                          #查看用户的权限
+GRANT USAGE ON *.* TO 'username'@'%'
+grant select on blog.* to username;                #赋予用户权限
+grant all on *.* to username;                      #大招
+revoke select on blog.* from username;             #收回用户权限
+revoke all on *.* from username;                   #大招
+flush privileges;                                  #立即生效
+```
+user表中host的含义
+
+host|说明
+----|----
+%        |匹配所有主机
+localhost|通过unix socket连接
+127.0.0.1|通过tcp/ip, 且只能在本地连接
+::1      |支持ipv6, 同127.0.0.1
+
+权限表
+
+权限|说明
+-----------------------|---------------------------------
+all                    | 所有权限
+alter                  |
+alter routine          |
+create                 |
+create routine         |
+create temporary tables|
+create user            |
+create view            |
+delete                 |
+drop                   |
+execute                |
+file                   |
+grant option           |
+index                  |
+insert                 | 可以使用create index和drop index
+lock tables            |
+process                |
+reload                 | 使用flush
+replication client     |
+replication slave      |
+select                 |
+show databases         |
+show view              |
+shutdown               |
+super                  |
+update                 |
+usage                  | 无访问权限
+
+### 数据库相关
+
+```
+create database blog;         #创建数据库
+```
+
+### 系统配置相关
+ubuntu环境，系统配置文件/etc/mysql/my.conf
+
+```
+show global variables;                  #查看所有系统全局变量
+show global variables like "%timeout%"  #查看所有与超时相关的全局变量                 
+```
+#### 开放3306端口
+修改/etc/mysql/mysql.conf.d/mysqld.cnf
+
+```
+#bind-address=127.0.0.1     #注释掉该行
+```

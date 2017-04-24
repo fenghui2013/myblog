@@ -67,6 +67,11 @@ AttributeError: MyClass instance has no attribute '__superprivate'
 
 ### 类相关
 
+#### \_\_new\_\_与\_\_init\_\_
+* \_\_new\_\_是一个静态方法，\_\_init\_\_是一个实例方法
+* \_\_new\_\_返回一个创建的实例，\_\_init\_\_什么都不返回
+* \_\_new\_\_执行后\_\_init\_\_才执行
+
 #### 类的各种方法
 
 ```
@@ -115,6 +120,10 @@ print p1.name    # [1]
 print p2.name    # [1]
 ```
 
+#### 单例
+
+[参看源码](https://github.com/fenghui2013/myblog_source/blob/master/python/language_test/singleton_test.py)
+
 ### 自省机制
 
 自省就是程序执行时能知道对象的类型。
@@ -140,5 +149,97 @@ isinstance()
 ### 迭代器与生成器
 
 ```
+mylist = [1, 2, 3]
+for i in mylist:
+    print i
+for i in mylist:
+    print i
+
+mygenerator = (x for x in range(3))
+for i in mygenerator:
+    print i
+for i in mygenerator:
+    print i
+    
+---- output ----
+1
+2
+3
+1
+2
+3
+0
+1
+2
+```
+* 迭代器的本质是: \_\_iter\_\_和\_\_next\_\_
+* 生成器的本质是: yield
+
+### 函数
+\*args和\*\*kwargs
 
 ```
+def print_everything(*args):
+    for count, thing in enumerate(args):
+        print '{0} {1}'.format(count, thing)
+
+print_everything('apple', 'banana', 'cabbage')
+
+def table_things(**kwargs):
+    for key, value in kwargs.items():
+        print '{0}={1}'.format(key, value)
+
+table_things(apple='fruit', cabbage='vegetable')
+---- output ----
+0 apple
+1 banana
+2 cabbage
+cabbage=vegetable
+apple=fruit
+```
+
+#### 装饰器
+```
+def makebold(fn):
+    def wrapped():
+        return '<b>' + fn() + '</b>'
+
+    return wrapped
+
+def makeitalic(fn):
+    def wrapped():
+        return '<i>' + fn() + '</i>'
+
+    return wrapped
+
+@makebold
+@makeitalic
+def say():
+    return 'hello world'
+
+print say()
+---- output ----
+<b><i>hello world</i></b>
+```
+
+#### 闭包
+* 必须有一个内嵌函数
+* 内嵌函数必须引用外部函数中的变量
+* 外部函数的返回值必须是内嵌函数
+
+#### lambda表达式
+
+```
+f = lambda x, y, z: x+y+z
+f(1, 2, 3)  # 6
+```
+
+### 鸭子类型
+### 作用域
+* 本地作用域(local)
+* 当前作用域被嵌入的作用域(enclosing local)
+* 全局/模块作用域(global)
+* 内置作用域(built-in)
+
+### 全局解释器锁(GIL)
+### 协程

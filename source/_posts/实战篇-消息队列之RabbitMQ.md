@@ -45,12 +45,8 @@ msg\_store\_file\_size\_limit| int 字节      | 16777216            |
 queue\_index\_max\_journal\_entries| int     | 262144              |
 
 ### 管理命令
+通过运行rabbitmqctl -h可获得命名的具体使用方法。
 
 ```
-rabbitmqctl add_user username password              # 增加用户
-rabbitmqctl delete_user username                    # 删除用户
-rabbitmqctl list_users                              # 列出所有用户
-rabbitmqctl change_password username new_password   # 更改用户密码
-set_permissions [-p <vhostpath>] <user> <conf> <write> <read>
-rabbitmqctl set_permissions -p vhost_name username ".*" ".*" ".*" # 设置权限, ".*"分别对应配置、写和读
+rabbitmqctl -h
 ```

@@ -17,8 +17,8 @@ epel是Fedora小组维护的软件仓库，为CentOS提供默认不提供的软�
 
 ### 启动与停止
 ```
-./rabbitmq -server                     # 启动服务
-./rabbitmq -server -detached           # 以守护进程的方式启动服务
+rabbitmq-server                        # 启动服务
+rabbitmq-server -detached              # 以守护进程的方式启动服务
 rabbitmqctl stop                       # 关闭应用和节点
 rabbitmqctl stop-app                   # 只关闭应用
 rabbitmqctl stop -n rabbit@[hostname]  # 关闭应用和节点
@@ -49,4 +49,13 @@ queue\_index\_max\_journal\_entries| int     | 262144              |
 
 ```
 rabbitmqctl -h
+```
+
+### 安装之后需执行的命令
+
+```
+rabbitmqctl add_user username password
+rabbitmqctl set_user_tags username administrator
+rabbitmqctl set_permissions -p / username ".*" ".*" ".*"
+rabbitmq-plugins enable rabbitmq_management              # 开启web管理插件
 ```

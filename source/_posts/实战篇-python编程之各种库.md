@@ -18,3 +18,40 @@ tags:
 glob.glob("*.xxx") # 返回以xxx结尾的文件组成的列表
 glob.iglob("*.xxx") # 返回迭代器
 ```
+
+
+### 数据库相关
+
+#### MySQLdb
+
+```
+import MySQLdb
+
+conn = MySQLdb.connect(host='',user='',passwd='',db='',port=5002)
+cur = conn.cursor()
+
+# insert
+# delete
+# update
+cur.execute("update ...")
+conn.commit()
+
+# query
+cur.execute("select ...")
+for doc in cur:
+    pass
+    
+# 事务
+conn.commit()
+conn.rollback()  # 回滚到上次commit
+
+try:
+    cur = conn.cursor()
+    cur.execute("xxx1")
+    cur.execute("xxx2")
+    cur.close()
+    conn.commit()
+except Exception, e:
+    cur.close()
+    conn.rollback()
+```

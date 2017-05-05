@@ -40,4 +40,3 @@ a * 2 > "aaaaaa"
 "%s %s" % ("hello", "world")
 "{0} {1}".format("hello", "world")
 ```
-

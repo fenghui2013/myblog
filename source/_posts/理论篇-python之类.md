@@ -52,15 +52,20 @@ tags:
 
 ```
 # 方法
-__init__(self, *args)    # 构造函数
-__and__(self, *args)     # 运算符重载 &
-__str__(self)            # 适合人读取的信息， 当没有实现时，返回repr的内容
-__repr__(self)           # 适合机器读取的信息
+__init__                 # 构造函数
+__del__                  # 析构函数
+__and__                  # &
+__or__                   # ||
+__str__                  # 适合人读取的信息， 当没有实现时，返回repr的内容
+__repr__                 # 适合机器读取的信息
+__call__                 # 函数调用
 __dict__()               # 属性字典，实例调用时只返回实例属性 类调用时只返回类属性
 __slots__(self)
 __class__(self)          # 实例所属的类的链接
 __bases__(self)          # 实例超类引用的元组
-__getattr(self)          # 获得属性(针对未定义的属性)
+__getattr__(self)        # 获得属性(针对未定义的属性) 点号运算
+__setattr__              # 属性赋值运算
+__delattr__              # 属性删除运算 
 __getattribute__(self)   # 获得属性(针对所有属性)
 # 属性
 __name__
@@ -75,13 +80,75 @@ __name
 __method # 等价于class_name class_method
 ```
 
+#### 抽象超类
+抽象超类的含义如下:
+
 ```
+class Super:               # Super是抽象超类
+    def method(self):
+        print("in Super.method")
+
+    def delegate(self):
+        self.action()   # expected to be defined
+        
+    def action(self):
+        #assert False, "action must be defined"
+        raise NotImplementedError("action must be defined")
+        
+class Provider(Super):
+    def action(self):
+        print("in Provider.action")
+
+p = Provider()
+p.delegate()
+```
+python提供的抽象超类的定义:
+
+```
+# 2.6
+from abc import ABCMeta, abstractmethod
+
+class Super():
+    __metaclass__ = ABCMeta
+    @abstractmethod
+    def method(self):
+        pass
+
+s = Super()
+
+# 3.0
+from abc import ABCMeta, abstractmethod
+
+class Super(metaclass = ABCMeta):
+    @abstractmethod
+    def method(self):
+        pass
+
+s = Super()
+```
+
+
+```
+# 属性
 class T():
     a = "hello"          # 类属性
     def setB(self, b):
         self.b = b       # 实例属性
-        
+ 
+# 方法        
 instance.method(args...) == class.method(instance, args...)
+
+# 子类调用父类的构造函数
+class Super:
+    def __init__(self, x):
+        self.x = x
+
+class Sub(Super):
+    def __init__(self, x, y):
+        Super.__init__(self, x)
+        self.y = y
+
+x = Sub(1, 2)
 ```
 
 ```
@@ -111,7 +178,15 @@ if __name__ == "__main__":
     print(y)
 ```
 
+#### 特殊函数
+
+```
+dir()       # 查看某一个对象的所有属性
+```
+
 #### 个人感悟
 
 * 类的本质是字典
+* 方法调用的本质是类作用域下的函数的调用
+* 点号引用变量会触发python的树搜索机制
 * python中的类只是通过class关键字声明了一个类对象。通过类对象可以创建实例对象。类对象和实例对象本质都是命名空间。通过树搜索机制实现继承，通过内部的分发机制实现运算符重载。

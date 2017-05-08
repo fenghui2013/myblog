@@ -48,23 +48,28 @@ tags:
 * New-style classes have some defaults, but not for common operations.
 * Operations allow classes to integrate with Python's object model. 
 
+可重载的运算符:
+
+```
+__init__(self, *args)    # 构造函数
+__and__(self, *args)     # 运算符重载 &
+__str__(self)            # 适合人读取的信息， 当没有实现时，返回repr的内容
+__repr__(self)           # 适合机器读取的信息
+__dict__(self)           # 属性字典
+__slots__(self)
+__class__(self)          # 实例所属的类的链接
+__bases__(self)          # 实例超类引用的元组
+__getattr(self)          # 获得属性(针对未定义的属性)
+__getattribute__(self)   # 获得属性(针对所有属性)
+```
 
 ```
 class T():
     a = "hello"          # 类属性
     def setB(self, b):
         self.b = b       # 实例属性
-```
-
-
-```
-__init__(self, *args)    # 构造函数
-__and__(self, *args)     # 运算符重载 &
-__str__(self)            # str函数或打印函数
-__dict__(self)           # 属性字典
-__slots__(self)
-__class__(self)          # 实例所属的类的链接
-__bases__(self)          # 实例超类引用的元组  
+        
+instance.method(args...) == class.method(instance, args...)
 ```
 
 #### 个人感悟

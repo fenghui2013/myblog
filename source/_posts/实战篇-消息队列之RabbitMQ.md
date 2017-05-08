@@ -54,8 +54,8 @@ rabbitmqctl -h
 ### 安装之后需执行的命令
 
 ```
-rabbitmqctl add_user username password
-rabbitmqctl set_user_tags username administrator
-rabbitmqctl set_permissions -p / username ".*" ".*" ".*"
-rabbitmq-plugins enable rabbitmq_management              # 开启web管理插件
+rabbitmqctl [-n node_name] add_user username password
+rabbitmqctl [-n node_name] set_user_tags username administrator
+rabbitmqctl [-n node_name] set_permissions -p / username ".*" ".*" ".*"
+rabbitmq-plugins [-n node_name] enable rabbitmq_management              # 开启web管理插件
 ```

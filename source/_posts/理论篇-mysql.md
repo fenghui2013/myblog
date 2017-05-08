@@ -5,4 +5,7 @@ tags:
     - mysql
 ---
 
+### 索引
+#### 最左前缀原理与相关优化
+
 [索引参考](http://blog.jobbole.com/24006/)

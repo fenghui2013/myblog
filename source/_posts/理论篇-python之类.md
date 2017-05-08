@@ -19,19 +19,19 @@ tags:
 
 命名空间对象的属性通常使用字典实现，类继承树仅仅是链接到其他字典的字典。
 
-类的主要特性:
+#### 类的主要特性:
 
 * The class statement creates a class object and assigns it a name
 * Assignemnts inside class statements make class attributes.
 * Class attributes provide object state and behavior.
 
-实例的主要特性:
+#### 实例的主要特性:
 
 * Calling a class object like a function makes a new instance object.
 * Each instance object inherits class attributes and gets its own namespace.
 * Assignments to attributes of self in methods make per-instance attributes.
 
-继承的关键点:
+#### 继承的关键点:
 
 * Superclasses are listed in parentheses in a class header.
 * Classes inherit attributes from their superclasses.
@@ -39,7 +39,7 @@ tags:
 * Each object.attribute reference invokes a new, independent search.
 * Logic changes are made by subclassing, not by changing superclasses.
 
-运算符重载的关键点:
+#### 运算符重载的关键点:
 
 * Methods named with double underscores(\_\_x\_\_) are special hooks.(python defines a fixed and unchangeable mapping from each of these operations to a specially named method)
 * Such operations are called automatically when instances appear in built-in operations.
@@ -51,16 +51,28 @@ tags:
 可重载的运算符:
 
 ```
+# 方法
 __init__(self, *args)    # 构造函数
 __and__(self, *args)     # 运算符重载 &
 __str__(self)            # 适合人读取的信息， 当没有实现时，返回repr的内容
 __repr__(self)           # 适合机器读取的信息
-__dict__(self)           # 属性字典
+__dict__()               # 属性字典，实例调用时只返回实例属性 类调用时只返回类属性
 __slots__(self)
 __class__(self)          # 实例所属的类的链接
 __bases__(self)          # 实例超类引用的元组
 __getattr(self)          # 获得属性(针对未定义的属性)
 __getattribute__(self)   # 获得属性(针对所有属性)
+# 属性
+__name__
+```
+
+#### 私有方法或变量
+单下划线开头的变量或方法只是一种约定，双下划线开头的变量或方法会将类信息加入到函数名中，是一种真正的私有化。
+```
+_name
+_method  # 约定
+__name
+__method # 等价于class_name class_method
 ```
 
 ```
@@ -70,6 +82,33 @@ class T():
         self.b = b       # 实例属性
         
 instance.method(args...) == class.method(instance, args...)
+```
+
+```
+# 使用自省机制实现通用的功能
+class AttrDisplay:
+    def gatherAttrs(self):
+        attrs = []
+        for key in sorted(self.__dict__):
+            attrs.append("%s=%s" % (key, getattr(self, key)))
+        return ', '.join(attrs)
+
+    def __str__(self):
+        return "[%s: %s]" % (self.__class__.__name__, self.gatherAttrs())
+
+
+if __name__ == "__main__":
+    class TopTest(AttrDisplay):
+        count = 0
+        def __init__(self):
+            self.attr1 = TopTest.count
+            self.attr2 = TopTest.count + 1
+            TopTest.count += 2
+    class SubTest(TopTest): pass
+
+    x, y = TopTest(), SubTest()
+    print(x)
+    print(y)
 ```
 
 #### 个人感悟

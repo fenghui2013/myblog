@@ -11,6 +11,8 @@ tags:
 装饰器使代码更易维护和美观，如果不使用装饰器，这些功能也可实现。
 
 #### 函数装饰器
+函数装饰器:装饰函数的装饰器
+
 函数装饰器其本质是在函数定义完成之后自动运行另一个函数，把原函数重新绑定到其他可调用对象上。主要用途: 1. 装饰函数或方法, 2. 管理函数。
 
 ```
@@ -51,6 +53,7 @@ func(6, 7)
 ```
 
 ####  类装饰器
+类装饰器:装饰类的装饰器
 主要用途: 1. 管理实例的创建 2. 管理类
 
 ```
@@ -88,8 +91,80 @@ class C:
 
 c = C(6, 7)
 print(c.attr)
+
+#有问题的写法
+class Decorator:
+    def __init__(self, C):
+        self.C = C
+    def __call__(self, *args):
+        self.wrapped = self.C(*args)
+        return self
+    def __getattr__(self, attrname):
+        return getattr(self.wrapped, attrname)
+
+@Decorator
+class C: ...
+
+x = C()
+y = C()
 ```
 
+#### 装饰器嵌套
+
+```
+@A
+@B
+@C
+def f():
+    pass
+
+f = A(B(C(f)))
+
+@A
+@B
+class C:
+    pass
+    
+C = A(B(C))
+```
+
+#### 装饰器参数
+接收参数的装饰器分为三个层级:
+
+1. 接收装饰器参数是一个可调用对象1
+2. 可调用对象1返回一个可调用对象2作为真正的装饰器
+3. 可调用对象2返回一个可调用对象3来处理对最初的函数或类的调用
+
+```
+def decorator(A, B):
+    # save or use A, B
+    def actualDecorator(F):
+        # save or use function F
+        # return a callable, nested def, class with __call__ etc
+        return callable
+    return actualDecorator
+    
+@decorator(A, B)
+def F(arg):
+    ...
+
+等价于
+F = decorator(A, B)(F)
+    
+F(99)
+```
+
+#### 保持状态信息的地方
+
+* 类实例属性
+* 全局作用域
+* 封闭作用域 nonlocal(3.x)
+* 函数属性
+
+#### 待深究
+
+* 使用描述符装饰方法(38章 类错误之一:装饰类方法)
+* 
 #### 函数装饰器VS类装饰器
 仔细分析一下代码，一个retry是类装饰器，一个是函数装饰器，都能成功吗？为什么？
 

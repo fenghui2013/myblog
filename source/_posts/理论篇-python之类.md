@@ -83,6 +83,109 @@ tags:
 \_\_index\_\_|整数值|
 \_\_enter\_\_, \_\_exit\_\_|环境管理器|with obj as var:
 \_\_get\_\_, \_\_set\_\_|描述符属性|x.attr, x.attr=value, del x.attr
+\_\_index\_\_|返回某一个实例的整数值|hex(x), bin(x), oct(x)
+
+```
+# 分片语法本质是一个分片对象slice的实例
+l = [5, 6, 7, 8, 9]
+print(l[::2])
+print(l[slice(None, None, 2)])
+
+class Indexer:
+    data = [5, 6, 7, 8, 9]
+    def __getitem__(self, index):
+        print("__getitem__: %s" % index)
+        return self.data[index]
+
+    def __setitem__(self, index, value):
+        self.data[index] = value
+
+    def __len__(self):
+        return len(self.data)
+
+x = Indexer()
+print(x[2])
+print(x[::2])
+print(x[:])
+x[:] = [1, 2, 3]
+print(x[:])
+
+-------output--------
+[5, 7, 9]
+[5, 7, 9]
+__getitem__: 2
+7
+__getitem__: slice(None, None, 2)
+[5, 7, 9]
+__getitem__: slice(0, 9223372036854775807, None)
+[5, 6, 7, 8, 9]
+__getitem__: slice(0, 9223372036854775807, None)
+[1, 2, 3]
+
+# __getitem__
+class steper:
+    data = "tom"
+    def __getitem__(self, i):
+        print("__getitem__: %s" % i)
+        return self.data[i]
+
+x = steper()
+print(x[1])
+#----for----
+for item in x:
+    print(item)
+#----in----
+print('o' in x)
+#----list comprehension----
+print([c for c in x])
+print(map(str.upper, x))
+
+# 任何支持for循环的类也会支持python所有的迭代环境
+
+# __iter__ __next__(2.x中是next)
+迭代环境优先使用__iter__，退而求其次使用__getitem__
+class Squares():
+    def __init__(self, start, stop):
+        self.value = start - 1
+        self.stop = stop
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        if self.value == self.stop:
+            raise StopIteration
+        self.value += 1
+        return self.value ** 2
+
+for i in Squares(1, 5):
+    print(i)
+
+
+# __index__
+class C:
+    def __index__(self):
+        return 255
+
+c = C()
+print(c)
+print(bin(c))
+----output----
+<__main__.C instance at 0x10578a5f0>
+0b11111111
+
+# __del__
+class Life:
+    def __init__(self, name='unknown'):
+        print('hello %s' % name)
+        self.name = name
+
+    def __del__(self):
+        print('goodbye %s' % self.name)
+
+t = Life('tom')
+t = 'xxx'          # call __del__
+```
 
 #### 私有方法或变量
 单下划线开头的变量或方法只是一种约定，双下划线开头的变量或方法会将类信息加入到函数名中，是一种真正的私有化。
@@ -195,6 +298,7 @@ if __name__ == "__main__":
 
 ```
 dir()       # 查看某一个对象的所有属性
+iter()      # 获取一个迭代对象
 ```
 
 #### 个人感悟

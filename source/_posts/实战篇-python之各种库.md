@@ -19,6 +19,35 @@ glob.glob("*.xxx") # 返回以xxx结尾的文件组成的列表
 glob.iglob("*.xxx") # 返回迭代器
 ```
 
+### functiontools
+
+函数|功能
+---|----
+partial| 预设部分参数
+
+```
+import functools
+
+def add(a, b):
+    return a + b
+
+print(add(1, 2))
+plus1 = functools.partial(add, 1)
+print(plus1(2))
+plus1_2 = functools.partial(add, 1, 2)
+print(plus1_2())
+plus1_2_3 = functools.partial(add, 1, 2, 3)
+print(plus1_2_3())
+
+----output----
+3
+3
+3
+Traceback (most recent call last):
+  File "functiontools_test.py", line 12, in <module>
+    print(plus1_2_3())
+TypeError: add() takes exactly 2 arguments (3 given)
+```
 
 ### 数据库相关
 

@@ -24,7 +24,17 @@ close(all_fds=False)|关闭IOLoop, 释放所有的资源|
 add_handler(fd, handler, events)|注册接收fd事件的处理器|未实现
 update_handler(fd, events)|改变fd的监听事件|未实现
 remove_handler(fd)|停止监听fd的事件|未实现
-add_callback()||
+add_callback(callback, \*args, \*\*kargs)|增加回调函数|
+add_callback_from_signal(callback, \*args, \*\*kargs)|
+add_future(future, callback)|
+add_timeout(deadline, callback, \*args, \*\*kargs)|
+call_at(when, callback, \*args, \*\*kargs)|
+call_later(delay, callback, \*args, \*\*kargs)|
+remove_timeout(timeout)|
+spawn_callback(callback, \*args, \*\*kargs)|适用于不关心返回值的回调
+time()| 返回当前时间
+PeriodicCallback(callback, callback_time, io_loop=None)| 周期性的调用回调函数
+
 
 
 ```

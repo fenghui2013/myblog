@@ -5,6 +5,12 @@ tags:
     - python
 ---
 
+### 内置库
+
+```
+types python支持的所有类型
+```
+
 ### glob
 
 功能: 查找符合特定规则的文件路径名
@@ -24,6 +30,7 @@ glob.iglob("*.xxx") # 返回迭代器
 函数|功能
 ---|----
 partial| 预设部分参数
+wraps| 将被包装函数的属性赋值给包装函数，方便调试
 
 ```
 import functools

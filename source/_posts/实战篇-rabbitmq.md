@@ -1,8 +1,8 @@
 ---
-title: 实战篇-消息队列之RabbitMQ
+title: 实战篇-rabbitmq
 date: 2017-03-27 21:53:44
 tags:
-	- RabbitMQ
+	- rabbitmq
 ---
 ### 安装
 

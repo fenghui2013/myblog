@@ -2,8 +2,6 @@
 title: 实战篇-消息队列之RabbitMQ
 date: 2017-03-27 21:53:44
 tags:
-	- 实战
-	- 消息队列
 	- RabbitMQ
 ---
 ### 安装

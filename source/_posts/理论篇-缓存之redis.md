@@ -1,8 +1,8 @@
 ---
-title: 理论篇-缓存之redis
+title: 理论篇-redis
 date: 2017-05-04 16:20:50
 tags:
-    - 缓存
+    - redis
 ---
 ### 命令
 

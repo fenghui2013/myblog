@@ -2,10 +2,7 @@
 title: 实战篇-hexo和github搭建个人博客
 date: 2017-03-25 16:17:47
 tags:
-    - hexo
-    - github
     - blog
-    - test
 ---
 
 [安装node.js](https://nodejs.org/en/) 此时会安装node和npm(js的包管理工具)

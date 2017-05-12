@@ -1,5 +1,5 @@
 ---
-title: 理论篇-java编程之maven
+title: 理论篇-maven
 date: 2017-04-10 13:49:25
 tags:
 	- java

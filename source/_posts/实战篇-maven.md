@@ -1,5 +1,5 @@
 ---
-title: 实战篇-java编程之maven
+title: 实战篇-maven
 date: 2017-04-10 11:50:06
 tags:
 	- java

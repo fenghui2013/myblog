@@ -1,9 +1,8 @@
 ---
-title: 实战篇-Mysql的基本操作
+title: 实战篇-mysql的基本操作
 date: 2017-03-26 20:17:46
 tags:
 	- mysql
-	- 基本操作
 ---
 ### 服务启动
 #### Ubuntu环境

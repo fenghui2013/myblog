@@ -39,16 +39,58 @@ import的工作原理:
 ```
 sys.modules  # 已导入的所有的模块
 sys.path     # 所有的搜索目录，包括以上四个搜索路径的列表
-import
-from
-imp.reload
+import       # 整体导入一个模块
+from         # 将对象从被加载的模块中拷贝到当前模块中
+reload       # reload只对python编写的源码有效 (3.x里是imp.reload)
+__dict__     # 模块的命名空间
+__name__     # 模块所在的文件
 
 python -O 生成优化的字节码文件
 distutils  # 第三方软件
 ```
 
-import导入时通常会运行__import__钩子函数来执行一些定制化的操作。
+```
+# small.py
+x = 1
+y = [1, 2]
 
+from small import *
+
+x = 42    # change local x only
+y[0] = 42 # change shared mutalbe in-place
+```
+
+import导入时通常会运行\_\_import\_\_钩子函数来执行一些定制化的操作。本质是一个赋值语句。from的本质是建立一个共享对象的引用。
+
+```
+from module import name1, name2
+is equal to 
+import module
+name1 = module.name1
+name2 = module.name2
+```
+
+模块的命名必须遵守变量的命名规范，因为模块名称之后会变成一个变量。
+
+不管使用import还是from，加载的对象只有一个。
+
+一个函数不能访问另一个函数的变量，除非是闭包。一个模块不能访问另一个模块的变量，除非是显式的导入。
+
+```
+# a.py
+X = 88
+def f():
+    global X
+    X = 99
+
+# b.py    
+X = 11
+import a
+a.f()
+print(X, a.X)  # 11, 99
+```
+
+reload是一个in-place的改变，会影响所有的import，但不会影响from。
 
 #### 题外话
 

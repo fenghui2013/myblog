@@ -35,10 +35,6 @@ deactivate      # 退出当前环境
 ```
 
 
-
-
-
-
 #### 参考
 
 [pip官网](https://pip.pypa.io/en/latest/installing/#python-and-os-compatibility)

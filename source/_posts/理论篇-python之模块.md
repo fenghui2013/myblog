@@ -41,9 +41,9 @@ sys.modules  # 已导入的所有的模块
 sys.path     # 所有的搜索目录，包括以上四个搜索路径的列表
 import       # 整体导入一个模块
 from         # 将对象从被加载的模块中拷贝到当前模块中
-reload       # reload只对python编写的源码有效 (3.x里是imp.reload)
+reload       # reload只对python编写的源码有效且只对当前文件 (3.x里是imp.reload)
 __dict__     # 模块的命名空间
-__name__     # 模块所在的文件
+__name__     # 若文件被当做主文件执行，则为"__main__", 若作为模块，则为文件名
 
 python -O 生成优化的字节码文件
 distutils  # 第三方软件
@@ -91,6 +91,42 @@ print(X, a.X)  # 11, 99
 ```
 
 reload是一个in-place的改变，会影响所有的import，但不会影响from。
+
+```
+# a.py
+def test():
+    print("......")
+
+>>>from a import test
+>>>test()              # output: .......
+>>>import a
+>>>reload(a)           # 对a做一些修改后重新加载
+>>>test()              # 任然引用的是之前的对象
+```
+
+#### 自省
+以下四个表达式效果一样
+
+```
+M.name
+M.__dict__['name']
+sys.modules['M'].name
+getattr(M, 'name')
+```
+
+#### 从字符串中加载模块
+
+```
+modname = "string"
+exec("import " + modname)  # 每次必须得编译import语句
+
+string = __import__(modname)
+```
+
+#### 声明顺序
+
+* 模块文件里的声明从上到下一个一个的执行，不允许提前引用
+* 函数体内的代码直到函数运行时才执行，所以引用无限制
 
 #### 题外话
 

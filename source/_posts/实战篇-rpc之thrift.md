@@ -1,5 +1,5 @@
 ---
-title: 实践篇-rpc之thrift
+title: 实战篇-rpc之thrift
 date: 2017-04-20 11:19:58
 tags:
     - rpc

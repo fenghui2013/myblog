@@ -88,9 +88,31 @@ create database blog;         #创建数据库
 create table ab (
     a int unsigned not null,
     b int unsigend not null
-) engine=innodb default charset=utf8 auto_increment=1;  #建表
+) engine=innodb default charset=utf8 auto_increment=1;  # 建表
 describe ab;                                            # 查看表信息
 ```
+#### 表操作
+
+```
+alter table ab add c int unsigned not null;             # 新增一列
+ALTER TABLE tbl_name
+| ADD {INDEX|KEY} [index_name]
+[index_type] (index_col_name, ...) [index_option] ...   # 创建索引
+
+CREATE [UNIQUE] INDEX index_name
+[index_type]
+ON tbl_name (index_col_name, ...)                       # 创建索引
+
+alter table ab add key idx_c (c);                       # 新建一个索引
+alter table ab add key idx_c (c(10));                   # 使用列值的一部分新建一个索引
+
+ALTER TABLE tbl_name
+DROP PRIMARY KEY
+| DROP {INDEX|KEY} index_name                           # 删除索引
+
+DROP INDEX index_name ON tbl_name;                      # 删除索引
+```
+
 #### 索引相关
 ```
 ALTER TABLE ab ADD INDEX index_name (column);  # 添加普通索引
@@ -133,6 +155,16 @@ service iptables restart
 create database index_test;
 create table ab (
     a int unsigned not null,
-    b int unsigend not null
+    b int unsigned not null
 ) engine=innodb default charset=utf8 auto_increment=1;
+```
+
+### 优化
+
+```
+show engine innodb status \G      # 查看innodb引擎状态
+show variables like "xxx" \G      # 查看配置参数
+explain sql                       # 查看执行计划
+show index from tbl_name \G       # 查看索引
+analyze table tbl_name;           # 优化表
 ```

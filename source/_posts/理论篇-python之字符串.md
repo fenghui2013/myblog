@@ -32,8 +32,10 @@ str        # 8位的文本和二进制数据
 unicode    # 宽字节的unicode文本
 
 # 3.x
+"xxx"
 str        # unicode文本(单字节和宽字节)
-bytes      # 二进制数据
+b"xxx"
+bytes      # 二进制数据(ASCII或者大于127的值进行转义后的十六进制值)
 bytearray  # 可变的bytes类型的数组
 
 str.encode()            # 编码类型可选，若不指定，则使用系统默认编码
@@ -41,9 +43,14 @@ bytes("xxx", encoding)  # 将str转换为bytes， 编码类型必选
 
 bytes.decode()          # 编码类型可选，若不指定，则使用系统默认编码
 str(b"xxx", encoding)   # 将bytes转换为str， 编码类型必选
+
+\x                      # 十六进制转义符
+\u \U                   # unicode转义符
+"\xNN"  "\uNNNN" "\UNNNNNNNN"        # 字符串支持
+len(s)                  # 针对\u字符串，返回的是字符数
 ```
 
-3.x里，str本质是一个可变的字符序列,bytes本质是一个可变的8位整数序列。
+3.x里，str本质是一个不可变的字符序列，bytes本质是一个不可变的8位整数序列，bytesarray本质是一个可变的8位整数序列。
 
 在3.x里，打开文件的模式至关重要，决定了文件的处理方式和使用的python对象类型。
 
@@ -53,4 +60,64 @@ str(b"xxx", encoding)   # 将bytes转换为str， 编码类型必选
 ```
 >>>b_s = b'spam'  # make a bytes object
 >>>s_s = 'spam'   # make a str object 
+```
+
+```
+>>>s = "XYZ"
+>>>s.encode("ascii")       # values 0-127 in 1 byte(7 bits)
+>>>s.encode("latin-1")     # values 0-255 in 1 byte(8 bits)
+>>>s.encode("utf-8")       # values 0-127 in 1 byte, 128-2047 in 2 others 3 or 4
+```
+
+#### 源文件字符集编码声明
+
+```
+# -*- coding: latin-1 -*-
+
+s = u"中国"
+print(list(s))
+----output----
+[u'a', u'b', u'c', u'\xe4', u'\xb8', u'\xad', u'\xe5', u'\x9b', u'\xbd']
+
+
+# -*- coding: utf-8 -*-
+
+s = u"中国"
+print(list(s))
+----output----
+[u'a', u'b', u'c', u'\u4e2d', u'\u56fd']
+```
+
+源文件字符集编码声明决定了源文件里的非ASCII的字符编码。
+
+#### 系统默认编码
+2.x的系统默认编码是ascii，3.x的系统默认编码是utf-8。系统默认编码最大的用途: 作为中间层。
+
+```
+s = u"abc中国"
+s.decode("utf-8")  # 本质是s.encode(sysdefaultencoding).decode("utf-8")
+```
+
+#### 文件读写
+
+```
+# 3.x
+open("filename", "w", encoding="utf-8").write("xxx") # 以utf-8编码写入文件
+open("filename", "r", encoding="utf-8").read()  # 以utf-8编码读取文件
+
+# 2.x
+import codecs
+codecs.open("filename", "w", encoding="utf-8").write("xxx")
+codecs.open("filename", "r", encoding="utf-8").read()
+```
+
+对BOM(Byte Order Marker)的处理
+
+```
+```
+
+#### 待看
+
+```
+Chapter 36. Other String Tool Changes in 3.0
 ```

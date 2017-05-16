@@ -44,12 +44,12 @@ Pending flushes (fsync) log: 0; buffer pool: 0
 0 OS file reads, 38 OS file writes, 16 OS fsyncs
 0.00 reads/s, 0 avg bytes/read, 0.00 writes/s, 0.00 fsyncs/s
 -------------------------------------
-INSERT BUFFER AND ADAPTIVE HASH INDEX
+INSERT BUFFER AND ADAPTIVE HASH INDEX  # 插入缓冲和自适应哈希索引
 -------------------------------------
-Ibuf: size 1, free list len 0, seg size 2,
-0 inserts, 0 merged recs, 0 merges
-Hash table size 17393, node heap has 1 buffer(s)
-0.00 hash searches/s, 0.00 non-hash searches/s
+Ibuf: size 1(已经合并记录页的数量), free list len 0(空闲列表的长度), seg size 2(当前插入缓冲的大小:2*16KB),
+0 inserts(插入的记录数), 0 merged recs(合并的页的数量), 0 merges(合并的次数)
+Hash table size 17393(哈希表槽的数量), node heap has 1 buffer(s)
+0.00 hash searches/s(每秒多少次哈希查找), 0.00 non-hash searches/s(每秒多少次非哈希查找)
 ---
 LOG
 ---
@@ -106,4 +106,22 @@ Seq_in_index: 1            # 索引列的位置(联合索引中使用)
 
 优化器会根据cardinality的值来判断是否使用索引。
 analyze table tbl_name;  # 会更新cardianlity的值
+```
+
+```
+mysql> explain select * from ab where a = 1 \G
+*************************** 1. row ***************************
+           id: 1
+  select_type: SIMPLE              # 选择类型
+        table: ab                  # 表名
+         type: ref                 # 
+possible_keys: idx_a               # 可使用的索引
+          key: idx_a               # 使用的索引
+      key_len: 4                   # 索引的长度
+          ref: const               # 
+         rows: 1                   # 行数
+        Extra:
+1 row in set (0.00 sec)
+
+查询优化器根据rows来判断是否使用索引，或执行全表扫描。
 ```

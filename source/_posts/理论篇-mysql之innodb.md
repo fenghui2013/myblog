@@ -54,7 +54,7 @@ master thread 待看
 ```
 IBUF_POOL_SIZE_PRE_MAX_SIZE 2  # 插入缓冲占总缓冲区的多少
 ```
-**为了插入速度的提升**。
+**为了插入速度的提升**
 
 ##### 双写(double write)
 double write由两部分组成: 1. 内存中的doublewrite buffer，大小为2MB；另一部分是物理磁盘上共享表空间中连续的128个页，即两个区，大小同样为2M。
@@ -73,7 +73,7 @@ Innodb_dblwr_writes              # 写磁盘的次数
 
 如果数据库在将页写入磁盘的过程中崩溃了，在恢复过程中，innodb引擎可以从共享表空间的doublewrite中找到该页的副本，将其拷贝到表空间里，再应用重做日志。
 
-**为了数据的安全**。
+**为了数据的安全**
 
 ##### 自适应哈希索引
 自适应哈希索引不需要将整个表都建索引，innodb会自动根据访问的频率和模式来为某些页建立哈希索引。
@@ -81,6 +81,8 @@ Innodb_dblwr_writes              # 写磁盘的次数
 ```
 innodb_adaptive_hash_index=ON        # 自适应哈希索引的开关
 ```
+
+**为了查询速度的提升**
 
 #### 启动、关闭和恢复
 
@@ -105,7 +107,130 @@ innodb_force_recovery | 含义
 6 | 不执行回滚的操作
 
 ### 文件
+#### 参数文件
+
+```
+SET
+| [global | session] system_var_name=expr
+| [@@global. | @@session. | @@]system_var_name=expr # 设置参数
+```
+
+#### 日志文件
+##### 错误日志
+对mysql的启动、运行、关闭过程进行了记录。
+
+```
+show variables like "log_error";  # 查看错误日志的路径
+```
+##### 二进制日志
+
+待看
+
+```
+log_bin=OFF                       # 二进制日志开关
+show variables like "datadir";    # 日志路径
+```
+##### 慢查询日志
+主要用来优化sql查询。
+
+```
+long_query_time=10       # 慢查询的阈值(单位:微妙)
+
+log_output=FILE                    # 指定慢查询的记录格式 FILE TABLE
+log_queries_not_using_indexes=OFF  # 没有使用索引的查询也被当做慢查询
+log_slow_queries=OFF               # 慢查询的开关
+slow_query_log=OFF                 # 慢查询日志开关
+slow_query_log_file=""             # 慢查询日志路径
+
+mysqldumpslow                      # 该工具可以帮助解析慢查询日志
+```
+#### 表结构定义文件
+以frm为后缀名结尾的文件记录了表的结构定义。该文件还用来存放试图的定义。
+#### innodb存储引擎文件
+##### 重做日志文件
+ib\_logile0和ib\_logfile1是innodb存储引擎的重做日志文件，主要用来记录innodb引擎的事务日志。
+
+![mysql_redo_log](/img/mysql_redo_log.png)
+
+如图所示，重做日志首先写入重做日志缓冲区中，然后以一定的频率刷新到磁盘。主线程每秒将重做日志缓冲写入到磁盘的重做日志文件，不论事务是否已提交。innodb_flush_log_at_trx_commit参数决定了在事务提交时，对重做日志的处理。
+
+innodb_flush_log_at_trx_commit | 含义
+-------------------------------|-----
+0 | 等待主线程每秒的刷新
+1 | commit时将重做日志缓冲同步到磁盘
+2 | commit时将重做日志异步写到磁盘
+
+```
+innodb_log_file_size       # 重做日志文件的大小
+innodb_log_files_in_group  # 日志文件组中重做日志文件的数量 默认为2
+innodb_mirrored_log_groups # 日志镜像文件组的数量，默认为1
+innodb_log_group_home_dir  # 日志文件组所在路径
+```
+
+##### 表空间文件
+ibdata1即为默认的表空间文件。innodb_file_per_table参数可设置每张表一个表空间文件，单独的表空间文件以ibd为后缀，这些文件只记录了该表的数据、索引和插入缓冲等信息，其他信息还是要存放到默认的表空间文件中。
+
+```
+innodb_file_per_table=0         # 每张表一个文件的开关
+
+[mysqld]
+innodb_data_file_path=datafile_spec1[;datafile_spec2]...
+innodb_data_file_path=/db/ibdata1:2000M;/db2/ibdata2:2000M:autoextend
+```
+
 ### 表
+innodb存储引擎表中，每张表都有个主键，如果在创建表时没有显式的定义主键(primary key)，则会按如下方式选择或创建主键:
+
+*  表中是否有非空的且为唯一的列，若有，则该列即为主键
+*  不符合上述条件，则自动创建一个6个字节大小的指针
+
+#### 逻辑存储结构
+
+所有数据被逻辑的存放在一个空间中，该空间被称为表空间(tablespace)。表空间又由段(segment)、区(extent)、页(page)组成。如下图所示:
+
+![mysql_tablespace](/img/mysql_tablespace.png)
+
+常见的段有数据段、索引段、回滚段等，其中数据段即为B+树的叶节点，索引段即为B+树的非叶节点。
+
+区是由64个连续的页组成的，每个页的大小为16KB，即每个区的大小为1MB。
+
+每页可容纳的记录数(即行数)为200~16KB/2之间。
+
+#### 物理存储结构
+
+mysql5.1之后，有两种存放行记录的格式: Compact和Redundant，其中Compact是新格式。
+
+```
+show table status \G           # 查看表信息
+```
+
+```
+Compact格式如下:
+变长字段实际长度列表|NULL标志位|头信息|列1数据|列2数据|...
+
+变长字段实际长度列表，当列的长度小于255时，用1字节表示，若大于255时，用2字节表示，最大不可超过2个字节(这就是为什么varchar不能超过65535的原因)。
+NULL标志位，该位表示了该行数据中是否有NULL标志位 根据需要，可能为多字节
+头信息，固定占用5字节，每位的如下表所示
+最后是每列的数据，NULL不占用列数据
+
+每行还有两个隐藏列: 事务ID列和回滚指针列，分别占用6字节和7字节，若没有primary key，则每行还会增加一个6字节的rowId列。
+```
+
+名称 | 大小(bit) | 含义
+----|----------|----
+() | 1 | 未知
+() | 1 | 未知
+deleted_flag | 1 | 该行是否已被删除
+min_rec_flag | 1 | 若该记录是预先被定义为最小记录则为1
+n_owned | 4 | 该记录拥有的记录数
+heap_no | 13 | 索引堆中该记录的排序记录
+record_type | 3 | 记录类型 000:普通 001:B+树节点指针 002:Infinum 003: Supermum 1xx=保留
+next_recorder | 16 | 页中下一条记录的相对位置
+
+```
+varchar(N)      # 其中varchar最大长度为65535个字节，其中N指的是字符个数
+```
+
 ### 索引
 innodb支持两种索引: B+树索引和哈希索引。
 

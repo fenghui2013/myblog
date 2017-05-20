@@ -197,6 +197,9 @@ innodb存储引擎表中，每张表都有个主键，如果在创建表时没�
 每页可容纳的记录数(即行数)为200~16KB/2之间。
 
 #### 物理存储结构
+若将innodb_file_per_table设置为on，则每个表将独立的产生一个表空间文件，以ibd结尾，数据、索引、表的内部数据字典信息都将保存在这个单独的表空间文件中。表结构定义文件后缀为frm。
+
+#### InnoDB行记录格式
 
 mysql5.1之后，有两种存放行记录的格式: Compact和Redundant，其中Compact是新格式。
 
@@ -228,8 +231,85 @@ record_type | 3 | 记录类型 000:普通 001:B+树节点指针 002:Infinum 003:
 next_recorder | 16 | 页中下一条记录的相对位置
 
 ```
-varchar(N)      # 其中varchar最大长度为65535个字节，其中N指的是字符个数
+varchar(N)      # 其中varchar最大长度为65535个字节，其中N指的是字符个数，且为所有varchar列的总和
+
+char(N)         # 在多字节字符集的情况下，char也被当做变长类型来处理
 ```
+
+#### InnoDB数据页结构
+
+InnoDB数据页格式如下图所示:
+
+![index_page_overview](/img/index_page_overview.png)
+
+File Header包含如下字段:
+
+字段 | 大小(字节) | 含义
+----|------|-----
+FIL\_FILE_PAGE\_OR\_CHKSUM | 4 | 目前为checksum值
+FIL\_PAGE\_OFFSET | 4 | 页的偏移值?
+FIL\_PAGE\_PREV | 4 | 上一页
+FIL\_PAGE\_NEXT | 4 | 下一页
+FIL\_PAGE\_LSN | 8 | 该页最后被修改的日志序列位置LSN(Log Sequence Number)
+FIL\_PAGE\_TYPE | 2 | 页的类型
+FIL\_PAGE\_FILE\_FLUSH\_LSN | 8 | 该值只在数据文件的一个页中定义，代表文件至少被更新到了该LSN值
+FIL\_PAGE\_ARCH\_LOG\_ON\_OR\_SPACE\_ID | 4 | 该页属于哪个表空间
+
+页类型有如下几种:
+
+名称 | 十六进制 | 解释
+----|---------|-----
+FIL\_PAGE\_INDEX | 0x45BF | B+树叶子节点
+FIL\_PAGE\_UNDO\_LOG | 0x0002 | Undo Log 页
+FIL\_PAGE\_INODE | 0x0003 | 索引节点
+FIL\_PAGE\_IBUF\_FREE\_LIST | 0x0004 | Insert Buffer 空闲列表
+FIL\_PAGE\_TYPE\_ALLOCATED | 0x0000 | 该页为最新分配
+FIL\_PAGE\_IBUF\_BITMAP | 0x0005 | Insert Buffer位图
+FIL\_PAGE\_TYPE\_SYS | 0x0006 | 系统页
+FIL\_PAGE\_TYPE\_TRX\_SYS | 0x0007 | 事务系统数据
+FIL\_PAGE\_TYPE\_FSP\_HDR | 0x0008 | File Space Header
+FIL\_PAGE\_TYPE\_XDES | 0x0009 | 扩展描述页
+FIL\_PAGE\_TYPE\_BLOB | 0x000A | BLOB页
+
+Index Header包含字段如下:
+
+字段 | 大小(字节) | 解释
+-----|----------|-----
+PAGE\_N\_DIR\_SLOTS | 2 | 在page directory中的slots数
+PAGE\_HEAP\_TOP | 2 | 空闲空间开始位置的偏移量
+PAGE\_N\_HEAP | 2 | 堆中的记录数
+PAGE\_FREE | 2 | 指向空闲列表的首指针
+PAGE\_GARBAGE | 2 | 已删除记录的字节数 即行记录中，delete flag为1的记录大小的总和
+PAGE\_LAST\_INSERT | 2 | 最后插入记录的位置
+PAGE\_DIRECTION | 2 | 最后插入的方向
+PAGE\_N\_DIRECTION | 2 | 一个方向连续插入记录的数量
+PAGE\_N\_RECS | 2 | 该页中记录的数量
+PAGE\_MAX\_TRX\_ID | 8 | 修改当前页的最大事务ID，注意该值仅在secondary index中定义
+PAGE\_LEVEL | 2 | 当前页在索引树中的位置 0x00代表页节点
+PAGE\_INDEX\_ID | 8 | 当前页属于哪个索引ID
+
+FSEG Header包含字段如下:
+
+字段 | 大小(字节) | 解释
+----|------------|------
+PAGE\_BTR\_SEG\_LEAF | 10 | B+树的叶节点中，文件段的首指针位置
+PAGE\_BTR\_SEG\_TOP | 10 | B+树的非叶节点中，文件段的首指针位置
+
+
+System records中包含的字段:
+
+infimum和supremum记录？
+
+User records即实际存储行记录的内容。
+
+FreeSpace空闲链表，同样是链表数据结构，当一条记录被删除后会被加入空闲链表中。
+
+File Traier的作用是保证页的完整性，其中包含的字段如下:
+
+字段 | 大小(字节) | 解释
+----|-----------|------
+FIL\_PAGE\_END\_LSN | 8 | 前4个字节代表该页的checksum值，后4个字节与File Header中的FIL_PAGE_LSN相同
+
 
 ### 索引
 innodb支持两种索引: B+树索引和哈希索引。
@@ -296,7 +376,185 @@ innodb_read_ahead_threshold=56   # 预读取阈值配置
 * 索引的使用原则: 高选择性和取出表中少部分数据。
 * 即使访问的是高选择性字段，但是由于查询命中的数据占表中大部分(经验值20%)数据时，此时查询优化器也会不走索引，而执行全表扫描。
 
+### 锁
 
+innodb存储引擎实现了两种标准的行级锁:
+
+* 共享锁(S Lock) 允许事务读一行数据
+* 排它锁(X Lock) 允许事务删除或更新一行数据
+
+innnodb引擎支持多粒度锁定，这种锁定允许在行级上的锁和表级上的锁同时存在。为了支持多粒度锁定，引擎支持另一种方式的锁，叫意向锁。意向锁是表级别的锁，主要是为了在一个事务中揭示下一行将被请求的锁的类型。支持两种意向锁:
+
+* 意向共享锁(IS Lock) 事务想要获得一个表中某几行的共享锁
+* 意向排它锁(IX Lock) 事务想要获得一个表中某几行的排它锁
+
+查看当前数据库的请求和锁的情况
+
+```
+show processlist \G
+show engine innodb status \G
+
+information_schema.INNODB_TRX
+information_schema.INNODB_LOCKS
+information_schema.INNODB_LOCK_WAITS
+```
+
+多版本并发控制(MVCC)
+
+```
+select @@tx_isolation;    # 查看事务隔离级别
+```
+
+锁定算法:
+
+* Record Lock: 单个行记录上的锁
+* Gap Lock: 间隙锁，锁定一个范围，但不包含记录本身
+* Next-key Lock: Record Lock + Gap Lock，锁定一个范围，并且包含记录本身
+
+事务隔离级别 | 非锁定的一致性读 | 锁定算法
+-----------|---------------|-------------------
+Read Uncommitted | 
+Read Committed | 总是读取被锁定行的最新一份快照数据 
+Repeatable Read(默认) | 总是读取事务开始时的行快照数据 | Next-key Lock
+
+```
+# 这些语句必须在事务中执行，当事务提交的时候，锁也就释放了
+select ... for update;         # 给读取的行加一个X锁
+select ... lock in share mode; # 给读取的行加一个S锁
+```
+
+#### 自增长与锁
+自增长插入分为三类:
+
+* Simple Inserts: 能确定插入行数的插入
+* Bulk Inserts: 不能确定插入行数的插入
+* Mixed-mode Inserts: 插入的数据中一部分值是自增长的，一部分是确定的
+
+```
+innodb_autoinc_lock_mode=1;   # 自增长锁的模式
+```
+
+innodb_autoinc_lock_mode | 解释 
+-------------------------|-----
+0 | 通过表锁的AUTO-INC Locking方式
+1 | 对于Simple Inserts通过互斥量<br>对于Bulk Inserts通过表锁的AUTO-INC Locking方式
+2 | 通过互斥量
+
+#### 使用锁的问题
+
+##### 丢失更新
+
+故事如下:
+
+1. 事务T1查询一行数据
+2. 事务T2查询一行数据
+3. 事务T1修改这行记录，更新数据库并提交
+4. 事务T2修改这行记录，更新数据库并提交
+
+这样，事务T1的修改被事务T2的修改给覆盖了，事务T1的更新丢失了。
+
+解决方案: 在查询的时候使用"select ... for update"这样的查询语句，这样就会对该行记录加一个排它锁，其他的所有操作都会被阻塞。
+
+
+##### 脏读
+脏读值得是在不同的事务下，可以读到另外事务未提交的数据。
+
+##### 不可重复读
+不可重复读(幻读)指由于别的事务的修改，导致同一事务内对同一数据的多次读取结果不一致，一般是插入了新的数据。
+
+#### 阻塞
+
+```
+innodb_lock_wait_timeout=50;      # 设置锁等待时间
+innodb_rollback_on_timeout=OFF;   # 在等待超时时，是否对事务进行回滚操作
+```
+
+#### 死锁
+死锁发生时会回滚一个事务。
+
+#### 心得体会
+在事务隔离级别为Read Committed下
+
+* 读取的时候，使用多版本并发控制，不涉及锁的操作，每个事务读取该读取的版本，事务之间不存在同步问题，除非显式加锁。
+* 更新的时候，会在该行显式加X锁，其他事务对该行的操作需要等待该锁的释放。
+* 插入的时候，会导致幻读。
+* 删除的时候，没有next-key lock锁保护。
+
+在事务隔离级别为Repeatable Read下
+
+
+* 读取的时候，使用多版本并发控制，不涉及锁的操作，每个事务读取该读取的版本，事务之间不存在同步问题，除非显式加锁。
+* 更新的时候，会在该行显式加X锁，其他事务对该行的操作需要等待该锁的释放。
+* 插入的时候，不会导致幻读。
+* 删除的时候，会有next-key lock锁保护。
+
+
+### 事务
+ACID特性:
+
+* 原子性(atomicity) 整个事务不可分割，要么成功，要么回到原始状态
+* 一致性(consistency) 事务开始前和结束后，完整性约束不被破坏?
+* 隔离性(isolation) 事务之间互不影响
+* 持久性(durability) 结果的持久化保存
+
+innodb的隔离性通过锁实现，其它三个属性原子性、一致性、持久性通过redo和undo来实现。
+
+#### redo
+事务日志通过redo日志文件和日志缓冲来实现。
+
+* 当事务开始时，会记录该事务的一个LSN(Log Sequence Number)
+* 当事务执行时，会往日志缓冲里插入事务日志
+* 当事务提交时，必须将日志缓冲写入文件(innodb_flush_log_at_trx_commit=1)
+
+#### undo
+当事务需要回滚时，利用的就是这个日志。
+
+
+#### 事务控制语句
+
+语句 | 含义
+-----|-----
+start transaction or begin | 显式的开启一个事务
+commit or commit work| 提交一个事务
+rollback or rollback work| 回滚一个事务
+savepoint identifier | 在事务中创建一个保存点
+release savepoint identifier | 删除一个事务的保存点
+rollback to identifier | 回滚到一个保存点
+set transaction | 设置事务隔离级别
+
+**备注**: 
+
+commit work在不同设置下的含义:
+
+completion\_type | 等价于 | 含义
+-----------------|-------|------
+0 | commit | 简单提交一个事务
+1 | commit and chain | 完成后会开启另一个事务
+2 | commit and release | 事务提交后会自动断开与服务器的连接
+
+rollback work与commit work类似。
+
+#### 隐式提交的sql语句
+自动提交模式下，执行一条sql语句后会立即执行commit动作。其他一些DDL语句也会自动提交。
+
+#### 事务隔离级别
+
+* read uncommitted
+* read committed
+* repeatable read
+* serializable
+
+innodb在repeatable read隔离级别下，通过next-key lock锁的算法，避免了幻读的产生，与serializable隔离级别等效。
+
+在seriablizable隔离级别下，innodb引擎会对每个select语句后自动加上lock in share mode，即给每个读取加一个共享锁。
+
+
+二进制日志格式有两种: statement和row。statement格式的是sql语句的记录，row格式的是对行的记录。
+
+#### 分布式事务
+
+### 备份与恢复
+### 性能调优
 
 ### 参考
 

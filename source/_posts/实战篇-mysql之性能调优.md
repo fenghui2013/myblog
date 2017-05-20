@@ -53,9 +53,9 @@ Hash table size 17393(哈希表槽的数量), node heap has 1 buffer(s)
 ---
 LOG
 ---
-Log sequence number 0 44233
-Log flushed up to   0 44233
-Last checkpoint at  0 44233
+Log sequence number 0 44233  # 当前的LSN
+Log flushed up to   0 44233  # 刷新到重做日志文件的LSN
+Last checkpoint at  0 44233  # 刷新到磁盘的LSN
 0 pending log writes, 0 pending chkp writes
 11 log i/o's done, 0.00 log i/o's/second
 ----------------------

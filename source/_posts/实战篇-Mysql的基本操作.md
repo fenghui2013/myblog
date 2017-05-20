@@ -111,6 +111,8 @@ DROP PRIMARY KEY
 | DROP {INDEX|KEY} index_name                           # 删除索引
 
 DROP INDEX index_name ON tbl_name;                      # 删除索引
+
+ALTER TABLE t1 ADD COLUMN addr varchar(20) not null AFTER user1; # 增加一列
 ```
 
 #### 索引相关
@@ -149,6 +151,8 @@ grant all on *.* to username@'%';
 -A INPUT -m state --state NEW -m tcp -p tcp --dport 3306 -j ACCEPT
 service iptables restart
 ```
+
+[5.7设置传送门](https://dev.mysql.com/doc/mysql-yum-repo-quick-guide/en/)
 
 #### 建库建表
 ```

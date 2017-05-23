@@ -165,6 +165,7 @@ typedef struct redisObject {
     unsigned type:4;     # 类型
     unsigned encoding:4; # 编码
     void *ptr;           # 指向底层实现数据结构的指针
+    unsigned lru:22      # 空转时长
 } robj;
 ```
 
@@ -203,26 +204,48 @@ REDIS\_STRING | REDIS\_ENCODING\_EMBSTR | 字符串的长度小于等于32字节
 REDIS\_STRING | REDIS\_ENCODING\_RAW | 字符串的长度大于32字节
 REDIS\_LIST | REDIS\_ENCODING\_ZIPLIST | 1. 所有字符串长度都小于64字节 2. 保存的元素数量小于512个
 REDIS\_LIST | REDIS\_ENCODING\_LINKEDLIST | 违反以上两条的任意一条则使用该编码
-REDIS\_HASH | REDIS\_ENCODING\_ZIPLIST | 使用压缩列表实现的哈希对象
-REDIS\_HASH | REDIS\_ENCODING\_HT | 使用哈希表实现的哈希对象
-REDIS\_SET | REDIS\_ENCODING\_INTSET | 使用整数集合实现的集合对象
-REDIS\_SET | REDIS\_ENCODING\_HT | 使用哈希表实现的集合对象
-REDIS\_ZSET | REDIS\_ENCODING\_ZIPLIST | 使用压缩列表实现的有序集合对象
-REDIS\_ZSET | REDIS\_ENCODING\_SKIPLIST | 使用跳跃表实现的有序集合对象
+REDIS\_HASH | REDIS\_ENCODING\_ZIPLIST | 1. 所有键值对的键和值得字符串长度都小于64字节 2. 保存的键值对的数量小于512个
+REDIS\_HASH | REDIS\_ENCODING\_HT | 违反以上两条的任意一条则使用该编码
+REDIS\_SET | REDIS\_ENCODING\_INTSET | 1. 保存的所有元素都是整数值 2. 保存的元素数量不超过512个
+REDIS\_SET | REDIS\_ENCODING\_HT | 违反以上两条的任意一条则使用该编码
+REDIS\_ZSET | REDIS\_ENCODING\_ZIPLIST | 1. 保存的所有元素的长度都小于64字节 2. 保存的元素数量小于128个
+REDIS\_ZSET | REDIS\_ENCODING\_SKIPLIST | 违反以上两条的任意一条则使用该编码
 
 ```
 # 列表对象
 list-max-ziplist-value       # 字符串最大长度
 list-max-ziplist-entries     # 列表保存的最大元素数量
+
+# 哈希对象
+hash-max-ziplist-value       # 哈希键值对的字符串最大长度
+hash-max-ziplist-entries     # 哈希表保存的最大键值对数量
+
+# 集合对象
+set-max-intset-entries       # 集合保存的最大元素数量
+
+# 有序集合对象
+typedef struct zset {
+    zskiplist *zsl;
+    dict *dict;
+} zset;
+有序集合对象同时使用跳跃表和字典来实现，为了兼得各自的优点。
+
+zset-max-ziplist-value       # 有序集合保存的元素的最大长度
+zset-max-ziplist-entries     # 有序集合保存的最大元素数
 ```
 
-##### 字符串对象
+#### 类型检查与命令多态
+类型检查通过redisObject结构的type属性实现。
 
-##### 列表对象
-##### 哈希对象
-##### 集合对象
-##### 有序集合对象
+#### 内存回收
+#### 对象共享
+redis服务启动的时候，会自动创建一万个字符串对象，这些对象包括了从0到9999的所有整数值。
 
+**好问题**: 为什么redis不共享包含字符串的对象？
+
+* 如果共享对象是保存整数值的字符串对象，那么验证操作的复杂度是O(1)
+* 如果共享对象是保存字符串值得字符串对象，那么验证操作的复杂度是O(N)
+* 如果共享对象是包含了多个值(或者对象)的对象，比如列表对象或者哈希对象，那么验证操作的复杂度是O($N^2$)
 
 ### 超时机制
 redis里面的超时时间是以unix时间戳(2.6之后是毫秒)的形式保存的。过期的精度在0~1毫秒之间。
@@ -240,3 +263,7 @@ redis主动检查过期的频率为每秒10次:
 3. 如果过期的key超过25%，则再从第一步开始
 
 在集群之间，对于过期的key，由主节点向从节点发送DEL操作，从而保证一致性问题。但是从节点也保存过期信息，这样当从节点被选举为主节点时，也可以执行过期操作。
+
+### 待研究
+
+* 内存回收算法

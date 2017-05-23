@@ -7,6 +7,8 @@ tags:
 
 ### 命令
 
+redis总共200个命令，其中字符串对象相关命令24个、列表对象相关命令17个、哈希对象相关命令15个、集合对象相关命令15个、有序集合对象相关命令21个。
+
 #### 字符串对象相关命令
 命令 | 解释 | 时间复杂度 | 特别说明
 ----|-----|----------|-----------
@@ -23,6 +25,8 @@ INCBY key increment | | O(1)
 INCBYFLOAT key increment | | O(1)
 DECR key | | O(1)
 DECRBY key decrement | | O(1)
+
+[Pattern: Rate limiter](https://redis.io/commands/incr)
 
 [Pattern: Time series](https://redis.io/commands/append)
 
@@ -49,18 +53,69 @@ RPUSHX key value | 追加一个值到列表 | O(1) | 若key指定的列表不存
 
 [Pattern: Reliable queue](https://redis.io/commands/rpoplpush#pattern-reliable-queue)
 
-#### 字典相关命令
-命令 | 备注 | 时间复杂度
------|-----|----------
-HLEN key|获取key指定的哈希表中field的数量|
-HGETALL key|获取key指定的哈希表中所有的field和value|
+#### 哈希对象相关命令
+命令 | 解释 | 时间复杂度 | 特别说明
+-----|-----|----------|--------
+HDEL key field [field ...]| 删除指定的field | O(N) | 
+HEXISTS key field | 检查field是否存在 | O(1) |
+HGET key field | 获取值 | O(1) | 
+HGETALL key|获取key指定的哈希表中所有的field和value| O(N) |
+HINCBY key field increment | 递增值 | O(1) | 若没有则创建
+HINCBYFLOAT key field increment| 递增值 | O(1) | 若没有则创建
+HKEYS key | 返回哈希对象中的所有键 | O(N) |
+HLEN key|获取key指定的哈希表中field的数量| O(1)
+HMGET key field [field ...]| 返回多个指定的field的值 | O(N) | 
+HMSET key field value [field value ...]| 设置多个指定的键值对 | O(N) |
+HSCAN key cursor [MATCH pattern] [COUNT count]| | |
+HSET key field value | 存储键值对 | O(1) |
+HSETNX key field value | 设置键值对 | O(1) | 若存在则什么也不做
+HSTRLEN key field | 返回field指定的值的长度 | O(1) |
+HVALS key | 获取哈希对象中的所有值 | O(N) |
 
-#### 集合相关命令
-命令 | 备注 | 时间复杂度
------|-----|----------
-ZADD key [NX &#124; XX] [CH] [INCR] score member [score member ...] | 向key指定的有序集合中添加带有分数的字段| O(lg(N))
-ZRANGE key start stop [WITHSCORES]| 获取key指定的有序集合里的指定范围的元素 |O(lg(N)+M)
+#### 集合对象相关命令
+
+命令 | 解释 | 时间复杂度 | 特别说明
+-----|-----|----------|--------
+SADD key member [member ...]| 增加多个成员到集合中 | O(1) |
+SCARD key | 返回集合中的元素数量 | O(1) |
+SDIFF key [key ...] | 返回第一个key指定的集合里有的而其他key指定的集合里没有的所有元素| O(N) | 差集
+SDIFFSTORE destination key [key ...]| 将第一个key指定的集合里有的而其他key指定的集合里没有的所有元素存入destination指定的集合 | O(N) | 
+SINTER key [key ...]| 返回所有key指定的集合的交集 | O(N\*M) | 交集
+SINTERSTORE destination key [key ...]| 将所有key指定的集合的交集存到destination集合 | O(N\*M) |
+SISMEMBER key member | 检查member是否是在key指定的集合里| O(1) |
+SMEMBERS key| 返回所有成员 | O(N) |
+SMOVE source destination member| 从source指定的集合移动member到destination指定的集合| O(1) |
+SPOP key [count]| 移除并返回一个或多个随机元素 | O(1) |
+SRANDMEMBER key [count]| | O(1) | 当count>0时返回count个不同的元素，当count<0时，可以返回多个相同的元素
+SREM key member [member ...]| | O(N) |
+SSCAN key cursor [MATCH pattern] [COUNT count]| | |
+SUNION key [key ...]| 返回所有key指定的所有不同的元素 | O(N) | 并集
+SUNIONSTORE destination key [key ...]| 将所有key指定的所有不同的元素添加到destination | O(N) |
+
+#### 有序集合对象相关命令
+命令 | 解释 | 时间复杂度 | 特别说明
+-----|-----|----------|--------
+ZADD key [NX &#124; XX] [CH] [INCR] score member [score member ...] | 向key指定的有序集合中添加带有分值的字段| O(lg(N))
 ZCARD key|获取key指定的有序集合里的元素数量| O(1)
+ZCOUNT key min max| 返回分值在min和max之间的元素的数量 | O(lgN) | 
+ZINCBY key increment member | 增加指定成员的分值 | O(lnN) | 
+ZINTERSCORE destination numkeys key [key ...]<br>[WEIGHTS weight [weight ...]]<br>[AGGREGATE SUM &#124; MIN &#124; MAX]| 交集| O(N\*K)+O(M\*lgM) N是最小的有序集合的数量 K是有序集合的个数 M是结果有序集合的数量 |
+ZLEXCOUNT key min max | 返回值在min到max之间的元素的数量 | O(lgN) |
+ZRANGE key start stop [WITHSCORES]| 获取key指定的有序集合里的指定范围的元素 |O(lg(N)+M)
+ZRANGEBYLEX key min max [LIMIT offset count]| 返回值在min和max之间的元素 | O(lg(N)+M)| 元素的分值必须相等
+ZRANGEBYSTORE key min max [WITHSCORES] [LIMIT offset count]| 返回分值在min和max之间的元素 | O(lg(N)+M) |
+ZRANK key member | 返回元素的排名 | O(lgN) |
+ZREM key member [member ...]| 删除指定的元素 | O(M*lgN) N是有序集合元素的数量 M是要删除的元素的数量|
+ZREMRANGEBYLEX key min max | 按照值删除指定范围的元素 | O(lg(N)+M)|
+ZREMRANGEBYRANK key start stop| 按照排名删除指定范围的元素 | O(lg(N)+M) N是有序集合元素的数量 M是要删除的元素的数量|
+ZREMRANGEBYSCORE key min max| 按照分值删除指定范围的元素 | O(lg(N)+M) |
+ZREVRANGE key start stop [WITHSCORES]| 以相反的顺序返回指定范围的元素 | O(lg(N)+M) N是有序集合元素的数量 M是要返回的元素的数量|
+ZREVRANGEBYLEX key max min [LIMIT offset count]| 按照值以相反的顺序返回指定范围的元素 | O(lg(N)+M) N有序集合元素的数量 M是返回的元素的数量| 所有元素分值必须相等
+ZREVRANGEBYSCORE key max min [WITHSCORES] [LIMIT offset count]| 按照分值以相反的顺序返回指定范围的元素 | O(lg(N)+M) |
+ZREVRANK key member| 以相反的顺序返回元素的排名 | O(lgN) |
+ZSCAN key cursor [MATCH pattern] [COUNT count]| | |
+ZSCORE key member | 返回元素的分值 | O(1) |
+ZUNIONSTORE destination numkeys key [key ...]<br>[WEIGHTS weight [weight ...]]<br>[AGGREGATE SUM &#124; MIN &#124; MAX]| 并集 | O(N)+O(MlgM) N是所有有序集合的元素之和 M是结果有序集合的元素总数|
 
 #### 事务相关命令
 

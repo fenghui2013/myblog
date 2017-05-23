@@ -31,4 +31,7 @@ protected-mode yes           # 如果想让其他主机访问，则设为no
 port 6379                    # 监听端口
 tcp-backlog 511              # 
 
+# 配置redis可用的最大内存数及对应的内存回收算法
+maxmemory                    # 可占用的最大内存
+maxmemory-policy             # 内存回收算法 volatile-lru allkeys-lru
 ```

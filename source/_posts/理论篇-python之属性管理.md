@@ -99,9 +99,39 @@ person.age = 10
 print(person.age)
 ```
 
+使用装饰器的property
+
+```
+class Person(object):
+    def __init__(self, name):
+        self._name = name
+    
+    @property
+    def name(self):
+        print("getName")
+        return self._name
+    @name.setter
+    def name(self, name):
+        print("setName")
+        self._name = name
+    @name.deleter
+    def name(self):
+        print("delName")
+        del self._name
+        
+person = Person("xxx")
+print(person.name)
+person.name = "yyy"
+print(person.name)
+del person.name
+person.age = 10
+print(person.age)
+```
+
 ### 进阶篇
 
 #### property与descriptor的关系
+既然property是descriptor的一种特例，那么它们之间是什么关系？
 
 ```
 class Property(object):
@@ -187,34 +217,7 @@ person.age = 10
 print(person.age)
 ```
 
-使用装饰器的property
-
-```
-class Person(object):
-    def __init__(self, name):
-        self._name = name
-    
-    @property
-    def name(self):
-        print("getName")
-        return self._name
-    @name.setter
-    def name(self, name):
-        print("setName")
-        self._name = name
-    @name.deleter
-    def name(self):
-        print("delName")
-        del self._name
-        
-person = Person("xxx")
-print(person.name)
-person.name = "yyy"
-print(person.name)
-del person.name
-person.age = 10
-print(person.age)
-```
+\_\_slots\_\_也是基于descriptor协议实现的。
 
 ```
 __getattr__       # 拦截所有未定义属性的访问

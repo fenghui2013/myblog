@@ -267,3 +267,7 @@ x-lock(1,2); update(1,2) to (1,4); retain x-lockx-lock(2,3); unlock(2,3)x-lock
 在该事务隔离级别下会导致脏读，即读到其他事务修改但未提交的数据。其他的工作机制与read committed一样。
 
 ##### SERIALIZABLE
+
+#### autocommit, commit和rollback
+在innodb里，所有的用户活动都发生在事务里。如果autocommit开启的话，每一个sql语句组成一个单独的事务。默认情况下，mysql为每一个新的连接创建一个autocommit开启的会话，因此如果语句执行没有返回错误，mysql将会自动提交该事务。如果语句执行有错误，回滚还是提交依赖于错误的类型。
+

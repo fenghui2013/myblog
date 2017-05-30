@@ -13,7 +13,7 @@ tags:
 
 类声明是在类所在的模块文件被加载时执行的。
 
-继承树的结构与类声明时父类出现的顺序有关，属性的查找顺序是有下至上，从左到右。
+继承树的结构与类声明时父类出现的顺序有关，属性的查找顺序是由下至上，从左到右。
 
 运算符重载函数(比如\_\_init\_\_)不是内建函数或保留字，它们仅是当对象出现在各种上下文时python寻找的属性。运算符重载应该与内置运算符实现工作一致。
 
@@ -21,171 +21,32 @@ tags:
 
 #### 类的主要特性:
 
-* The class statement creates a class object and assigns it a name
-* Assignemnts inside class statements make class attributes.
-* Class attributes provide object state and behavior.
+* class语句创建了一个class对象，并且分配了一个名字
+* class内的赋值语句创造了类属性
+* 类属性提供了对象状态和行为
 
 #### 实例的主要特性:
 
-* Calling a class object like a function makes a new instance object.
-* Each instance object inherits class attributes and gets its own namespace.
-* Assignments to attributes of self in methods make per-instance attributes.
+* 像函数一样调用类对象将创建一个实例
+* 每个实例对象继承了类属性并得到了自己的命名空间
+* 方法里对self属性的赋值创造了每个实例的属性
 
 #### 继承的关键点:
 
-* Superclasses are listed in parentheses in a class header.
-* Classes inherit attributes from their superclasses.
-* Instances intherit attributes from all accessible classes.
-* Each object.attribute reference invokes a new, independent search.
-* Logic changes are made by subclassing, not by changing superclasses.
+* 超类写在class语句的括号里
+* 类继承它们超类的属性
+* 实例从所有可访问的类中继承属性
+* 每个属性的引用将触发一个新的独立的搜索
+* 子类里的实现不会影响到父类
 
 #### 运算符重载的关键点:
 
-* Methods named with double underscores(\_\_x\_\_) are special hooks.(python defines a fixed and unchangeable mapping from each of these operations to a specially named method)
-* Such operations are called automatically when instances appear in built-in operations.
-* Classes may override most bulit-in type operations.
+* 带有双下划线的方法名是特殊的钩子(python定义了一个固定的操作符到特殊方法名之间的映射关系)
+* 当实例出现在内建的操作中时，相应的操作被自动调用
+* 类可以覆盖大多数内建类型的操作
 * There are no defaults for operator overloading methods, and none are required.
 * New-style classes have some defaults, but not for common operations.
-* Operations allow classes to integrate with Python's object model. 
-
-可重载的运算符:
-
-方法| 重载 | 调用
-----|-----|-----
-\_\_new\_\_|创建|在\_\_init\_\_之前创建对象
-\_\_init\_\_|构造函数|对象建立: x = Class(args)
-\_\_del\_\_|析构函数| x对象收回\_\_call\_\_|函数调用 x(\*args, **kwargs)
-\_\_delete\_\_||
-\_\_dict\_\_|属性字典，实例调用时只返回实例属性 类调用时只返回类属性|
-\_\_slots\_\_||
-\_\_class\_\_|实例所属的类的链接|
-\_\_bases\_\_|实例超类引用的元组|
-\_\_getattr\_\_|获得属性(针对未定义的属性) 点号运算|
-\_\_setattr\_\_|属性赋值运算|
-\_\_delattr\_\_|属性删除运算 
-\_\_getattribute\_\_|获得属性(针对所有属性)|
-\_\_and\_\_|与运算| 1 and 2
-\_\_or\_\_|或运算| 1 or 2
-\_\_str\_\_|适合人读取的信息， 当没有实现时，返回repr的内容|pirnt(x) repr(x) str(x)
-\_\_repr\_\_|适合机器读取的信息|
-\_\_getiiem\_\_|索引运算|x[key], x[i:j], 没__iter__时的for循环和其他迭代器
-\_\_setitem\_\_|索引赋值语句|x[key]=value x[i:j]=sequence
-\_\_delitem\_\_|索引和分片删除|del x[key], del x[i:j]
-\_\_len\_\_|长度|len(x), 如果没有\_\_bool\_\_, 真值测试
-\_\_bool\_\_|布尔测试|bool(x), 真测试，在2.6中是\_\_nonzero\_\_
-\_\_lt\_\_,\_\_gt\_\_||
-\_\_le\_\_,\_\_ge\_\_||
-\_\_eq\_\_,\_\_ne\_\_|特定的比较|x<y, x>y, x<=y, x>=y, x==y, x!=y 在2.6中只有\_\_cmp\_\_
-\_\_radd\_\_|右侧加法|other + x
-\_\_iadd\_\_|实地加法|x + y
-\_\_iter\_\_, \_\_next\_\_|迭代环境|I=iter(x), next(I); for loops
-\_\_contains\_\_|成员关系测试|item in x
-\_\_index\_\_|整数值|
-\_\_enter\_\_, \_\_exit\_\_|环境管理器|with obj as var:
-\_\_get\_\_, \_\_set\_\_|描述符属性|x.attr, x.attr=value, del x.attr
-\_\_index\_\_|返回某一个实例的整数值|hex(x), bin(x), oct(x)
-
-```
-# 分片语法本质是一个分片对象slice的实例
-l = [5, 6, 7, 8, 9]
-print(l[::2])
-print(l[slice(None, None, 2)])
-
-class Indexer:
-    data = [5, 6, 7, 8, 9]
-    def __getitem__(self, index):
-        print("__getitem__: %s" % index)
-        return self.data[index]
-
-    def __setitem__(self, index, value):
-        self.data[index] = value
-
-    def __len__(self):
-        return len(self.data)
-
-x = Indexer()
-print(x[2])
-print(x[::2])
-print(x[:])
-x[:] = [1, 2, 3]
-print(x[:])
-
--------output--------
-[5, 7, 9]
-[5, 7, 9]
-__getitem__: 2
-7
-__getitem__: slice(None, None, 2)
-[5, 7, 9]
-__getitem__: slice(0, 9223372036854775807, None)
-[5, 6, 7, 8, 9]
-__getitem__: slice(0, 9223372036854775807, None)
-[1, 2, 3]
-
-# __getitem__
-class steper:
-    data = "tom"
-    def __getitem__(self, i):
-        print("__getitem__: %s" % i)
-        return self.data[i]
-
-x = steper()
-print(x[1])
-#----for----
-for item in x:
-    print(item)
-#----in----
-print('o' in x)
-#----list comprehension----
-print([c for c in x])
-print(map(str.upper, x))
-
-# 任何支持for循环的类也会支持python所有的迭代环境
-
-# __iter__ __next__(2.x中是next)
-迭代环境优先使用__iter__，退而求其次使用__getitem__
-class Squares():
-    def __init__(self, start, stop):
-        self.value = start - 1
-        self.stop = stop
-
-    def __iter__(self):
-        return self
-
-    def next(self):
-        if self.value == self.stop:
-            raise StopIteration
-        self.value += 1
-        return self.value ** 2
-
-for i in Squares(1, 5):
-    print(i)
-
-
-# __index__
-class C:
-    def __index__(self):
-        return 255
-
-c = C()
-print(c)
-print(bin(c))
-----output----
-<__main__.C instance at 0x10578a5f0>
-0b11111111
-
-# __del__
-class Life:
-    def __init__(self, name='unknown'):
-        print('hello %s' % name)
-        self.name = name
-
-    def __del__(self):
-        print('goodbye %s' % self.name)
-
-t = Life('tom')
-t = 'xxx'          # call __del__
-```
+* Operations allow classes to integrate with Python's object model.
 
 #### 私有方法或变量
 单下划线开头的变量或方法只是一种约定，双下划线开头的变量或方法会将类信息加入到函数名中，是一种真正的私有化。
@@ -195,6 +56,35 @@ _name
 _method  # 约定
 __name
 __method # 等价于class_name class_method
+```
+
+#### 方法的两种调用方式: 绑定与未绑定
+
+类中的方法有两种调用方法:1. 绑定实例调用 2. 未绑定实例调用
+
+```
+class C:
+    def test(self, name):
+        print(name)
+        
+c = C()
+x = c.test
+x("xxx")      # 绑定实例调用
+
+x = C.test
+x(c, "xxx")   # 未绑定实例调用
+
+3.x中取消了未绑定方法，统一为函数:
+
+class C:
+    def test1(self, name):
+        print(name)
+        
+    def test2(name):
+        print(name)
+        
+c = C()
+C.test2("xxx")     # 函数调用 fail in 2.6
 ```
 
 #### 抽象超类
@@ -295,21 +185,19 @@ if __name__ == "__main__":
     print(y)
 ```
 
-#### 特殊函数
+#### 旧式类
 
 ```
-dir()       # 查看某一个对象的所有属性
-iter()      # 获取一个迭代对象
+class C:     # classic class
+    ...
 ```
+传统类的搜索方式: 深度优先，从左到右，简称DFLR
 
 #### 新式类
 
 在python2.2之后包含了一种新式类，3.x里类得到了统一，都是新式类。
 
 ```
-class C:     # classic class
-    ...
-    
 class C(object):  # new-style class
     ...
 ```
@@ -371,6 +259,31 @@ class C(object):  # new-style class
     x = D()
     x.attr     # search order: x D B C A
     ```
+    
+    
+##### 新式类的扩展功能
+
+##### slots
+该功能可以优化内存和访问速度。
+
+拥有\_\_slots\_\_属性的类默认没有\_\_dict\_\_属性，其他基于\_\_dict\_\_属性的方法使用\_\_slots\_\_代替。
+
+```
+class Person(object):
+    __slots__ = ['name', 'age', 'job']   # 限制实例拥有的属性
+
+p = Person()
+p.sex = "xxx"         # error
+    
+# 增加__dict__
+class Person(object):
+    __slots__ = ['name', 'age', 'job', '__dict__']
+    
+p = Person()
+p.sex = "xxx"         # ok
+```
+
+**备注:** 只能限制实例属性，不能限制类属性
 
 #### 个人感悟
 
@@ -378,3 +291,8 @@ class C(object):  # new-style class
 * 方法调用的本质是类作用域下的函数的调用
 * 点号引用变量会触发python的树搜索机制
 * python中的类只是通过class关键字声明了一个类对象。通过类对象可以创建实例对象。类对象和实例对象本质都是命名空间。通过树搜索机制实现继承，通过内部的分发机制实现运算符重载。
+
+
+#### 待研究
+
+python中，type继承自object，object继承自type，尽管这两个是两个不同的对象。type是生成class的类型。

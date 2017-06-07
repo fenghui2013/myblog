@@ -271,3 +271,84 @@ x-lock(1,2); update(1,2) to (1,4); retain x-lockx-lock(2,3); unlock(2,3)x-lock
 #### autocommit, commit和rollback
 在innodb里，所有的用户活动都发生在事务里。如果autocommit开启的话，每一个sql语句组成一个单独的事务。默认情况下，mysql为每一个新的连接创建一个autocommit开启的会话，因此如果语句执行没有返回错误，mysql将会自动提交该事务。如果语句执行有错误，回滚还是提交依赖于错误的类型。
 
+如果想在autocommit开启的会话里执行多语句事务，需要通过显式的START TRANSACTION或BEGIN语句来开启一个事务，通过COMMIT或ROLLBACK关闭一个事务。
+
+如果autocommit默认是关闭的，若没有显式提交该事务的话，mysql将回滚该事务。
+
+一些语句会隐式结束一个事务，就像在执行那个语句之前执行了COMMIT。
+
+COMMIT意味着在当前事务中做的修改将被持久化和对其他会话可见。ROLLBACK将取消该事务的所有修改。COMMIT和ROLLBACK都会释放掉在当前事务中获取的锁。
+
+使用事务打包DML操作: 在autocommit关闭的会话里，通过显式执行COMMIT或ROLLBACK结束事务。在autocommit开启的事务里，通过显式执行START TRANSACTION或BEGIN开启一个事务，显式执行COMMIT或ROLLBACK结束一个事务。
+
+#### 一致性非锁定读
+
+一致性读意味着InnoDB通过多版本给某次查询返回一个数据库在某个时间点的快照。查询将会看到在那个时间点之前提交的事务的修改，不会看到在那个时间点之后提交的或未提交事务的修改。该规则有一个特例: 在同一个事务里查询可以看到之前语句的修改。该特例引发一些反常的事情:如果更新了表中的某些行，查询将会看到被修改行的最新版本，和其他行的旧版本。如果其他事务同时更新了同一张表，反常的事情意味着你看到的表处在一个不存在在数据库中的状态。
+
+如果事务隔离级别是REPEATABLE READ，在同一个事务里的所有一致性读读取的是在该事务中第一次查询所产生的快照。通过提交当前事务然后进行查询能获得一个更新的快照。
+
+在READ COMMITTED事务隔离级别下，在一个事务里的每一个一致性读都会设置和读取最新的快照。
+
+假设你运行在默认的事务隔离级别REPEATABLE READ下，当你触发一致性读的时候，InnoDB会给你的事务设置一个时间点。如果另一个事务在该时间点之后对数据做了一些修改并且提交，这些修改对你来说是不可见的。
+
+**注意:**数据库状态快照仅应用到事务中的SELECT语句，不会对DML语句产生影响。如果你在一个事务中插入或修改了一些行并且提交，另一个并发事务中的UPDATE或DELETE将会修改这些刚被提交的行，尽管查询不到它们。如果一个事务更新或删除了被不同事务提交的行，这些改变对当前事务变成可见的。
+
+通过将提交事务后进行新的查询来使时间点前进。这叫多版本并发控制。
+
+如果你想看到最新的数据库的状态，使用READ COMMITTED事务隔离级别或锁定读。
+
+在READ COMMITTED事务隔离级别下，在事务里的每一个一致性读将设置和读取最新的快照。在LOCK SHARE IN MODE，一个锁定读被触发: SELECT将会阻塞直到包含最新行的事务结束。
+
+一致性读不能工作在某些DDL语句上:
+
+* 一致性读不能工作在DROP TABLE上，因为mysql不能使用一个已经被删除的表并且innodb删除了该表。
+* 一致性读不能工作在ALTER TABLE上，因为该语句制作了一个原始表的临时拷贝并且当拷贝完成后会删除原始表。当你在事务中重新触发一致性读的时候，新表里的行是不可见的因为事务的快照被制作的时候这些行是不可见的。在这种情况下，事务返回一个错误: ER\_TABLE\_DEF\_CHANGED
+
+在某些主从语句中，某些读取操作也不会使用一致性读。比如INSERT INTO ... SELECT, UPDATE ... (SELECT), CREATE TABLE ... SELECT。这些SELECT未指定FOR UPDATE或LOCK IN SHARE MODE。
+
+* 默认情况下，InnoDB使用更强的锁，SELECT更像READ COMMITTED，每个一致性读设置或读取新的快照。
+* 在这些情况下，为了使用一致性读，开启innodb\_locks\_unsafe\_for\_binlog选项，设置隔离级别为READ UNCOMMITTED, READ COMMITTED, REPEATABLE READ。在这种情况下，没有锁被设置。
+
+
+#### 锁定读
+如果你在一个事务里查询数据随后插入或更新相关的数据，普通的SELECT语句不能提供足够的保护。其它事务可以更新或删除你刚刚查询的行。InnoDB支持两种类型的锁定读，锁定读提供了安全保障。
+
+* SELECT ... LOCK IN SHARE MODE
+    
+    在读取的行上设置一个共享锁。其它的会话能读取该行，但是直到该事务提交之后才能修改它们。如果这些行被另一个还未提交的事务修改了，该查询将会阻塞直到事务结束随后使用最新的数据。
+* SELECT ... FOR UPDATE
+
+    对于搜索触发的索引记录，在行和任何相关的索引实体上设置一个排它锁。如果你执行了一个UPDATE操作，效果是一样的。如果其它事务执行以下操作，将会被阻塞: 1. 更新这些行 2. SELECT ... LOCK IN SHARE MODE 3. 在某些事务隔离级别下的读。
+    
+当处理树结构或图结构的数据时，这些语句是非常有用的。
+
+被SELECT ... LOCK IN SHARE MODE或SELECT ... FOR UPDATE设置的锁在事务提交或回滚之后被释放。
+
+##### InnoDB里被不同SQL语句设置的锁
+
+锁定读、UPDATE、DELETE通常会在浏览的记录上设置record locks。
+
+如果使用辅助索引且索引记录锁是排它的，InnoDB也会获取相应的集群索引记录然后锁定它们。
+
+如果执行全表扫描，每行都会被锁定。
+
+SELECT ... LOCK IN SHARE MODE和SELECT ... FOR UPDATE只在满足条件的结果上加锁。
+
+InnoDB设置如下不同的锁:
+
+* SELECT ... FROM是一个一致性读，获取数据库的快照，没有锁除非事务隔离级别是SERIALIZABLE。
+* SELECT ... FROM ... LOCK IN SHARE MODE在搜索触及的所有索引记录上设置一个共享的next-key locks。然而，对于一个使用唯一索引搜索唯一行的语句，一个record locks被设置
+* SELECT ... FROM ... FOR UPDATE在搜索触及的所有索引记录上设置一个排它的next-key locks。然而，对于一个使用唯一索引搜索唯一行的语句，一个record locks被设置
+* UPDATE ... WHERE ...在搜索触及的所有索引记录上设置一个排它的next-key locks。然而，对于一个使用唯一索引搜索唯一行的语句，一个record locks被设置
+* 当UPDATE修改一个集群索引记录时，隐式的锁会被设置在辅助索引上。The UPDATE operation also takes shared locks on affected secondary index records when performing duplicate check scans prior to inserting new secondary index records, and when inserting new secondary index records.
+* DELETE FROM ... WHERE ...在搜索触及的所有索引记录上设置一个排它的next-key locks。然而，对于一个使用唯一索引搜索唯一行的语句，一个record locks被设置
+* INSERT在被插入的记录上设置一个排它锁。该锁是record locks，不会阻止其他会话在被插入的行之前进行插入
+* INSERT ... ON DUPLICATE KEY UPDATE与简单的INSERT不同，当重复键错误发生时，会获得一个排它锁而不是共享锁
+* 如果在唯一索引上没有冲突的话REPLACE和INSERT一样。否则的话，一个排它的next-key locks将被设置
+* INSERT INTO T SELECT ... FROM S WHERE ...
+* AUTO_INCREMENT
+* FOREIGN KEY
+* LOCK TABLES
+
+#### 幻读
+

@@ -58,6 +58,41 @@ __name
 __method # 等价于class_name class_method
 ```
 
+#### 静态方法和类方法
+
+静态方法主要用来操作类属性。
+
+类方法主要用来处理各自类的属性。
+
+```
+class C(object):
+    @staticmethod
+    def test(name):        # 静态方法 3.0中不再需要staticmethod装饰器
+        print(name)
+        
+C.test("xxx")
+
+3.x
+class C(object):
+    def test(name):        # 3.x中不再需要staticmethod
+        print(name)
+        
+C.test("xxx")
+```
+
+```
+class A(object):
+    count = 0        # 创建的实例个数
+    
+class B(A):
+    count = 0        # 创建的实例个数
+    
+class C(B):
+    count = 0        # 创建的实例个数
+    
+# 统计各个类创建的实例个数(提示:通过类方法)
+```
+
 #### 方法的两种调用方式: 绑定与未绑定
 
 类中的方法有两种调用方法:1. 绑定实例调用 2. 未绑定实例调用

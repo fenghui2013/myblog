@@ -140,3 +140,32 @@ PEXPIRE key milliseconds | 设置key的超时时间 | O(1) | 毫秒单位
 EXPIREAT key timestamp | 设置key的超时时间 | O(1) | 设置秒级时间戳
 PEXPIREAT key milliseconds-timestamp | 设置key的超时时间 | O(1) | 设置毫秒级时间戳
 PERSISIT key | 删除key上的超时时间 | O(1) | 
+TTL key | 返回有超时时间的关键字的剩余时间 | O(1) | 单位为秒
+PTTL key | 返回有超时时间的关键字的剩余时间 | O(1) | 单位为毫秒
+TIME | 返回服务器当前时间 | O(1) | 秒级时间戳+毫秒数
+
+#### 数据库相关命令
+
+命令 | 解释 | 时间复杂度 | 特别说明
+-----|-----|----------|---------
+SELECT index | 选择某个数据库 | | 默认从0开始
+DEL key [key ...] | 删除指定的键 | O(N) |
+RANDOMKEY | 从当前数据库中随机选择一个key | O(1) |
+EXISTS key [key ...] | 判断是否存在关键字 | O(1) | 
+DBSIZE | 返回当前数据库关键字的数量 | |  
+FLUSHALL [ASYNC] | 清空所有数据库 | O(N) |
+FLUSHDB [ASYNC] | 清空当前数据库 | O(N) |
+
+#### 持久化命令
+命令 | 解释 | 时间复杂度 | 特别说明
+-----|-----|----------|---------
+SAVE | 以RDB文件的形式同步持久化数据库 | | 该命令会阻塞所有其他客户端的操作
+BGSAVE | 以RDB文件的形式异步持久化数据库 | | 
+LASTSAVE | 返回上次数据库执行保存的时间戳 | | 客户端可以通过该命令来判断BGSAVE是否执行成功
+BGREWRITEAOF | 启动一个AOF重写进程 | |
+
+#### 性能优化相关
+
+命令 | 解释 | 时间复杂度 | 特别说明
+-----|-----|----------|---------
+INFO [section] | 返回服务器的信息 | 

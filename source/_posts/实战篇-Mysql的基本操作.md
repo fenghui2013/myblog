@@ -32,7 +32,7 @@ drop user username;                                #删除用户
 use mysql;
 update user set password=password("新密码") where user="root"; #更新用户密码
 show grants for username;                          #查看用户的权限
-GRANT USAGE ON *.* TO 'username'@'%'
+GRANT ALL ON *.* TO 'username'@'%'
 grant select on blog.* to username;                #赋予用户权限
 grant all on *.* to username@'%';                      #大招
 revoke select on blog.* from username;             #收回用户权限

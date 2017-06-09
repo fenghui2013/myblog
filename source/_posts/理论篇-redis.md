@@ -256,6 +256,8 @@ redis里key的过期方式有两种: 1.被动过期 2.主动过期
 
 主动过期方式: redis会每隔一段时间检查过期key集合里面的key是否超时。
 
+定时删除方式: 在设置键的过期时间的同时，创建一个定时器(timer)，让定时器在键的过期时间来临时，立即执行对键的删除操作。
+
 redis主动检查过期的频率为每秒10次:
 
 1. 从过期的key集合里面随机抽取20个进行测试
@@ -263,6 +265,125 @@ redis主动检查过期的频率为每秒10次:
 3. 如果过期的key超过25%，则再从第一步开始
 
 在集群之间，对于过期的key，由主节点向从节点发送DEL操作，从而保证一致性问题。但是从节点也保存过期信息，这样当从节点被选举为主节点时，也可以执行过期操作。
+
+### 数据库
+
+```
+struct redisServer {
+    redisDb *db;   # 数组，保存服务器中的所有数据库
+    int dbnum;     # 服务器的数据库数量
+};
+
+typedef struct redisClient {
+    redisDb *db;   # 记录客户端当前正在使用的数据库 
+} redisClient;
+
+typedef struct redisDb {
+    dict *dict;    # 数据库键空间
+    dict *expires; # 保存着键的过期时间 
+} redisDb;
+```
+
+![redis_server_1](/img/redis_server_1.png)
+
+![redis_server_2](/img/redis_server_2.png)
+
+![redis_server_3](/img/redis_server_3.png)
+
+![redis_server_4](/img/redis_server_4.png)
+
+### 持久化
+
+redis有两种持久化方式和: RDB持久化和AOF持久化。
+
+RDB持久化方式通过将数据库中的所有键值对持久化到磁盘的方式完成。AOF持久化方式通过记录修改命令来记录数据库的状态。
+
+```
+struct redisServer {
+    long long dirty;               # 修改计数器
+    time_t lastsave;               # 上次保存的时间
+    struct saveparam *saveparams;  # 记录了保存条件的数组
+    sds aof_buf;                   # AOF缓冲区
+};
+
+struct saveparam {
+    time_t seconds;  # 秒数
+    int changes;     # 修改数
+};
+```
+
+#### RDB持久化
+RDB持久化有两种触发方式:
+
+* 手动触发: BGSAVE和SAVE
+* 自动触发: save配置
+
+```
+RDB文件格式:
+REDIS|db_version|databases|FOF|check_sum
+
+REDIS: 5个字节 值为REDIS
+db_version: 4个字节 rdb文件的版本号 比如0006
+databases: 0个或多个数据库
+EOF: 1个字节 值为EOF
+check_sum: 8个字节的无符号整数 通过前面的内容计算出校验和
+
+database结构:
+SELECTDB|db_number|key_value_pairs
+
+SELECTDB: 1个字节
+db_number: 数据库号 长度可能是1字节 2字节或者5字节
+key_value_pairs: 所有键值对数据，大小不定
+
+key_value_pairs(没有过期时间)结构:
+TYPE|key|value
+key_value_pairs(有过期时间)结构:
+EXPIRETIME_MS|ms|TYPE|key|value
+
+EXPIRETIME_MS: 1个字节
+ms: 8个字节 毫秒级的时间戳
+
+TYPE记录了value的类型:
+REDIS_RDB_TYPE_STRING
+REDIS_RDB_TYPE_LIST
+REDIS_RDB_TYPE_SET
+REDIS_RDB_TYPE_ZSET
+REDIS_RDB_TYPE_HASH
+REDIS_RDB_TYPE_LIST_ZIPLIST
+REDIS_RDB_TYPE_SET_INTSET
+REDIS_RDB_TYPE_ZSET_ZIPLIST
+REDIS_RDB_TYPE_HASH_ZIPLIST
+
+各个value的编码方式参看《redis设计与实现》或官网文档
+```
+
+#### AOF持久化
+AOF持久化分为三个部分: 命令追加、文件写入、文件同步
+
+随着服务器的运行，AOF的体积会越来越大，所以需要对AOF文件进行重建。AOF文件重建原理如下:通过添加对数据库中现有键值对的重建命令而完成。
+
+redis创建一个子进程在后台完成AOF重建工作。由于主进程还在处理客户端的请求，所以会造成重建的AOF文件与实际数据库状态不一样。redis新增了一个AOF重建缓冲区，将重建过程中所有的命令写入到该缓冲区，待重建完成后，子进程向父进程发送信号，父进程收到信号后将该缓冲区的内容追加到AOF重建文件中，然后原子的替换原来的AOF文件。
+
+### 事件
+redis服务器是一个事件驱动程序，处理的事件包含两大类: 文件事件和时间事件。
+
+#### 文件事件
+
+文件事件就是对网络IO的一种抽象。
+
+网络IO | 文件事件
+------|---------
+accept | READABLE
+read | READABLE
+close | READABLE
+write | WRITABLE
+
+#### 时间事件
+
+* 定时事件: 让一段程序在指定的时间之后执行一次。
+* 周期性事件: 让一段程序每个一定时间就执行一次。
+
+redis通过程序的返回值来区分定时事件和周期性事件。返回值为下次该函数执行的间隔时间。(**该方法可以借鉴**)
 
 ### 待研究
 

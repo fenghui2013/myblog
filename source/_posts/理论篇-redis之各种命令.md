@@ -36,6 +36,9 @@ DECRBY key decrement | | O(1)
 
 命令 | 解释 | 时间复杂度 | 特别说明
 ----|-----|----------|-----------
+BLPOP key [key ...] timeout | LPOP的阻塞版本 | O(1) |
+BRPOP key [key ...] timeout | RPOP的阻塞版本 | O(1) | 
+BRPOPLPUSH source destination | RPOPLPUSH的阻塞版本 | O(1) | 
 LINDEX key index | 返回指定索引处的值 | O(N) | 表头从0开始 表尾从-1开始
 LINSERT key BEFORE &#124; AFTER pivot value | 在列表某一项之前或之后添加元素 | O(N) |
 LLEN key|获取一个key指定的列表的长度| O(1) |
@@ -163,6 +166,40 @@ SAVE | 以RDB文件的形式同步持久化数据库 | | 该命令会阻塞所�
 BGSAVE | 以RDB文件的形式异步持久化数据库 | | 
 LASTSAVE | 返回上次数据库执行保存的时间戳 | | 客户端可以通过该命令来判断BGSAVE是否执行成功
 BGREWRITEAOF | 启动一个AOF重写进程 | |
+
+#### 客户端相关的命令
+
+命令 | 解释 | 时间复杂度 | 特别说明
+-----|-----|----------|---------
+CLIENT KILL [ip:port] [ID client-id] [TYPE noral &#124; master &#124; slave &#124; pubsub] [ADDR ip:port] [SKIPME yes/no]| 关闭客户端连接 | | |  
+CLIENT LIST | 返回客户端的信息 | O(N) |  
+CLIENT PAUSE timeout | 暂定所有的客户端(内部交互客户端除外) | | 单位为毫秒
+CLIENT REPLY ON &#124; OFF &#124; SKIP | 服务器是否响应客户端 | | 
+CLIENT SETNAME | 设置当前连接的名字 | O(1) | 
+CLIENT GETNAME | 返回当前连接的名字 | O(1) | 
+
+#### 事务相关命令
+
+命令 | 解释 | 时间复杂度 | 特别说明
+-----|-----|----------|---------
+DISCARD | | |
+EXEC | | |
+MULTI | | |
+UNWATCH | | |
+WATCH | | |
+
+#### 主从复制相关命令
+
+命令 | 解释 | 时间复杂度 | 特别说明
+-----|-----|----------|---------
+SLAVEOF host port | 使该服务器成为host:port服务器的从节点 | |
+
+##### 内部相关命令
+
+命令 | 解释 | 时间复杂度 | 特别说明
+-----|-----|----------|---------
+SYNC | 从节点从主节点同步数据 | | 
+PSYNC runid offset | 从节点从主节点同步数据 | |
 
 #### 性能优化相关
 

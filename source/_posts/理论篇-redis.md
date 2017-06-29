@@ -385,6 +385,132 @@ write | WRITABLE
 
 redis通过程序的返回值来区分定时事件和周期性事件。返回值为下次该函数执行的间隔时间。(**该方法可以借鉴**)
 
+### 客户端与服务器
+
+#### 客户端
+
+```
+struct redisServer {
+    list *clients;  # 一个链表，保存所有的客户端的状态
+};
+
+typedef struct redisClient {
+    int fd;                     # 套接字描述符
+    robj *name;                 # 名字
+    int flag;                   # 标记客户端的角色
+    sds querybuf;               # 输入缓冲区
+    robj **argv;                # 命令参数
+    int argc;                   # 命令参数个数
+    struct redisCommand *cmd;   # 命令对应的执行函数 
+    char buf[REDIS_REPLY_CHUNK_BYTES] # 固定输出缓冲区
+    int bufpos;                       # 固定输出缓冲区中目前已使用的字节数量
+    list *reply;                      # 可变输出缓冲区
+    int authenticated;                # 身份验证
+    time_t ctime;                     # 建立连接的时间
+    time_t lastinteraction;           # 上次交互的时间
+    time_t obuf_soft_limit_reached_time; # 
+    
+} redisClient;
+```
+
+redis中的客户端有两种: 真客户端和伪客户端。其中，伪客户端用于载入AOF文件或执行lua脚本中包含的redis命令。
+
+#### 服务器
+
+```
+struct redisServer {
+    unsigned lruclock:22;   # 系统用于计算键的空转时长
+};
+```
+
+redis通过周期性的执行serverCon函数来维持服务器的状态。
+
+redis在服务器启动的时候会创建一些共享对象，比如"OK", "ERR", 1到10000的字符串对象。(这种技术在很多地方都可见到，比如jvm里)
+
+### 主从复制
+
+当slaveof命令执行完毕后，从节点会向主节点发送PSYNC命令，如果是初次同步，则执行完整重同步(full resynchronization)，主节点生成RDB文件，然后传输给从节点，从节点载入RDB文件。若载入RDB文件期间，主节点有写操作，则主节点将命令传播给从节点，使主从一致。若断线重连后，则执行部分重同步(partial resynchronization)，主机点只将从节点断线期间执行的写操作发送给从节点，使主从一致。
+
+```
+struct redisServer {
+    char *masterhost;     # 主服务器地址
+    char *masterport;     # 主服务器端口
+};
+```
+
+主从复制的实现:
+
+1. 设置主服务器的地址和端口
+2. 建立连接
+3. 发送PING命令
+4. 身份验证
+5. 发送端口信息
+6. 同步
+7. 命令传播
+
+### sentinel(哨兵节点)
+sentinel(哨兵节点)是redis的高可用解决方案。
+
+```
+struct sentinelState {
+    uint64_t current_epoch;   # 
+    dict *masters;            # 所有被监视的服务器
+    int tilt;
+    int running_scripts;
+    mstime_t tilt_start_time; #
+    mstime_t previous_time;
+    list *scripts_queue;      #  
+};
+
+masters的值:
+typedef struct sentinelRedisInstance {
+    int flags;              # 记录了实例的类型以及该实例的状态
+    char *name;             # 实例的名字
+    char *runid;            # 实例运行id
+    uint64_t config_epoch;  # 配置epoch
+    sentinelAddr *addr;     # 实例地址
+    dict *slaves;           # 从节点信息
+    dict *sentinels;        # 其它sentinels信息
+    mstime_t down_after_period;  # 判断主节点下线的时间限制
+    int quorum;                  # 判断主节点下限的sentinel的投票数量 
+    int parallel_syncs;          #
+    mstime_t failover_timeout;   # 
+} sentinelRedisInstance;
+```
+
+#### 节点之间的连接
+当启动sentinel节点后，sentinel与主节点建立如下连接:
+
+* 命令连接
+* 订阅连接
+
+sentinel从主节点获取从节点信息后，也建立以上两个连接。
+
+其他监控主节点的sentinel也对主节点和从节点建立以上连接。sentinel会通过订阅连接向主节点发送消息，其它订阅了该主节点的sentinel节点收到消息后可得知监视同一主节点的所有其它所有sentinel节点。
+
+sentinel节点之间会互相建立命令连接。
+
+#### 判断主节点失效的机制
+
+当一个主节点对于一个sentinel节点不可达down-after-milliseconds毫秒后，该sentinel节点就认为该主节点主观下线。
+
+然后询问其它监视该主节点的sentinel节点，若超过预设置的值则认为该节点客观下线。随后进行新主节点的选举。
+
+#### 节点选举
+
+首先，简单介绍下redis的sentinel的概念，然后通过一个简单的例子来说明redis的sentinel的运行机制。
+
+* 一个主节点下可以有多个从节点
+* 一个主节点可以被多个sentinel节点监视
+* 当主节点被判断为客观下线状态时，会有两个选举过程
+* 第一个选举过程是从所有监视该主节点的sentinel里产生领头sentinel，第二个选举过程是从所有的从节点中产生主节点
+
+这个选举机制和总统选举很像。总统相当于主节点，总统胡选人相同于从节点，各大有钱有势的集团相当于sentinel。当总统换届时，各大集团选举出一个领头的集团，该领头的集团从总统候选人中选出一个新的总统。
+
+redis采用了Raft算法保证各个节点达成共识。
+
+### 集群
+
 ### 待研究
 
 * 内存回收算法

@@ -89,11 +89,11 @@ create table ab (
     a int unsigned not null,
     b int unsigend not null
 ) engine=innodb default charset=utf8 auto_increment=1;  # 建表
-describe ab;                                            # 查看表信息
 ```
-#### 表操作
+#### 表相关操作
 
 ```
+desc table_name;                                        # 查看表结构
 alter table ab add c int unsigned not null;             # 新增一列
 ALTER TABLE tbl_name
 | ADD {INDEX|KEY} [index_name]
@@ -115,7 +115,7 @@ DROP INDEX index_name ON tbl_name;                      # 删除索引
 ALTER TABLE t1 ADD COLUMN addr varchar(20) not null AFTER user1; # 增加一列
 ```
 
-#### 索引相关
+#### 索引相关操作
 ```
 ALTER TABLE ab ADD INDEX index_name (column);  # 添加普通索引
 ALTER TABLE ab ADD INDEX index_name (column1, column2);  # 添加联合索引

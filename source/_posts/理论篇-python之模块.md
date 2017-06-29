@@ -70,6 +70,29 @@ name1 = module.name1
 name2 = module.name2
 ```
 
+利用__import__钩子函数统计各个模块的调用时间
+
+```
+import __builtin__
+import time
+
+builtin_import = __builtin__.__import__
+
+
+def myimport(name, globals={}, locals={}, fromlist=[], level=-1):
+    start = time.time() * 1000
+    res = builtin_import(name, globals, locals, fromlist, level)
+    end = time.time() * 1000
+    print("%s: %s" % (name, end-start))
+    return res
+
+__builtin__.__import__ = myimport
+
+
+import module_1
+import sys
+```
+
 模块的命名必须遵守变量的命名规范，因为模块名称之后会变成一个变量。
 
 不管使用import还是from，加载的对象只有一个。

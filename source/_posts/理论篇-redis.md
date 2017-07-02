@@ -5,6 +5,8 @@ tags:
     - redis
 ---
 
+redis设计的主旨: 简单 高效
+
 ### 数据结构与对象
 
 redis中一切皆对象，共包含5种对象，分别为字符串对象(string object)、列表对象(list object)、哈希对象(hash object)、集合对象(set object)、有序集合对象(sorted set object)。
@@ -510,6 +512,63 @@ sentinel节点之间会互相建立命令连接。
 redis采用了Raft算法保证各个节点达成共识。
 
 ### 集群
+
+```
+struct clusterNode {
+    mstime_t ctime;                    # 创建节点的时间
+    char name[REDIS_CLUSTER_NAMELEN];  # 节点的名字
+    int flags;                         # 节点标识(主节点或从节点 上线或下线)
+    uint64_t configEpoch;              # 用于故障转移
+    char ip[REDIS_IP_STR_LEN];         # 节点的ip地址
+    int port;                          # 节点的端口号
+    clusterLink *link;                 # 保存连接节点的相关信息
+    unsigned char slots[16384/8];      # 槽
+    int numslots;                      # 槽数
+};
+
+typedef struct clusterLink {
+    mstime_t ctime;                    # 连接的创建时间
+    int fd;                            # tcp套接字
+    sds sndbuf;                        # 输出缓冲区
+    sds rcvbuf;                        # 输入缓冲区
+    struct clusterNode *node;          # 与该连接相关联的节点
+} clusterLink;
+
+typedef struct clusterState {
+    clusterNode *myself;               # 指向当前节点的指针
+    uint64_t currentEpoch;             # 用于故障转移
+    int state;                         # 集群状态: 在线或下线
+    int size;                          # 
+    dict *nodes;                       # 集群中所有的节点
+    clusterNode *slots[16384];         # 所有槽的分配情况
+    zskiplist *slots_to_keys;          # 槽与键的对应关系
+} clusterState;
+```
+
+**redis集群思想:** redis的集群由节点组成，其中包括主节点和从节点。集群按照槽进行分片，共支持16384个槽，每个主节点负责一部分的槽存储。当进行某个键的存取操作时，首先根据键计算出对应的槽值，然后根据槽值去对应的节点进行操作。从节点负责备份主节点，并且当主节点失效时，进行故障转移。
+
+### 发布订阅
+
+redis的发布订阅系统底层通过字典和链表实现。
+
+### 事务
+
+```
+typedef struct redisClient {
+    multiState mstate;              # 事务状态
+} redisClient;
+
+typedef struct multiState {
+    multiCmd *commands;             # 事务队列
+    int count;                      # 命令数量
+} multiState;
+
+typedef struct multiCmd {
+    robj **argv;                    # 参数
+    int argc;                       # 参数数量
+    struct redisCommand *cmd;       # 命令指针
+} multiCmd;
+```
 
 ### 待研究
 

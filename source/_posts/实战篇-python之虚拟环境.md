@@ -24,7 +24,11 @@ sudo pip install virtualenv
 
 
 ```
-若想在虚拟环境为
+# 创建python3.6版本的虚拟环境
+virtualenv --python=python3.6 python3_6
+
+# 进入虚拟环境
+source python3_6/bin/activate
 ```
 
 ```

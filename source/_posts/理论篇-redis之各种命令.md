@@ -118,22 +118,7 @@ ZREVRANGEBYSCORE key max min [WITHSCORES] [LIMIT offset count]| 按照分值以�
 ZREVRANK key member| 以相反的顺序返回元素的排名 | O(lgN) |
 ZSCAN key cursor [MATCH pattern] [COUNT count]| | |
 ZSCORE key member | 返回元素的分值 | O(1) |
-ZUNIONSTORE destination numkeys key [key ...]<br>[WEIGHTS weight [weight ...]]<br>[AGGREGATE SUM &#124; MIN &#124; MAX]| 并集 | O(N)+O(MlgM) N是所有有序集合的元素之和 M是结果有序集合的元素总数|
-
-#### 事务相关命令
-
-命令 | 备注 | 时间复杂度
------|-----|----------
-MULTI | 事务的开始标记 |
-EXEC | 执行所有当前事务中已入队的命令 |  
-
-#### 其它命令
-命令 | 解释 | 时间复杂度 | 特别说明
------|-----|----------|---------
-BGSAVE|异步的数据集到硬盘|
-BGREWRITEAOF|异步的重写持久化AOF|
-TYPE key | 返回key指定的值的类型，可能是string, list, set, zset, hash | O(1)
-OBJECT sumcommand [arguments [arguments ...]] | 查看与key相关的redis对象的内部 | O(1)
+ZUNIONSTORE destination numkeys key [key ...]<br>[WEIGHTS weight [weight ...]]<br>[AGGREGATE SUM &#124; MIN &#124; MAX]| 并集 | O(N)+O(MlgM) N是所有有序集合的元素之和 M是结果有序集合的元素总数| 
 
 #### 超时时间相关命令
 命令 | 解释 | 时间复杂度 | 特别说明
@@ -183,10 +168,10 @@ CLIENT GETNAME | 返回当前连接的名字 | O(1) |
 命令 | 解释 | 时间复杂度 | 特别说明
 -----|-----|----------|---------
 DISCARD | | |
-EXEC | | |
-MULTI | | |
+EXEC | 开始执行命令 | |
+MULTI | 事务的开始 | |
 UNWATCH | | |
-WATCH | | |
+WATCH | 事务开始的另一种方式| |
 
 #### 主从复制相关命令
 
@@ -201,8 +186,50 @@ SLAVEOF host port | 使该服务器成为host:port服务器的从节点 | |
 SYNC | 从节点从主节点同步数据 | | 
 PSYNC runid offset | 从节点从主节点同步数据 | |
 
-#### 性能优化相关
+#### 集群相关命令
+命令 | 解释 | 时间复杂度 | 特别说明
+-----|-----|----------|---------
+CLUSTER ADDSLOTS | | | 
+CLUSTER COUNT-FAILURE-REPORTS node-id | | |
+CLUSTER COUNTKEYSINSLOT slot | | |
+CLUSTER DELSLOTS slot [slot ...] | | |
+CLUSTER FAILOVER [FORCE &#124; TAKEOVER] | | |
+CLUSTER FORGET node-id | | | 
+CLUSTER GETKEYSINSLOT slot count | 返回count个指定槽里的关键字的数量 | | 
+CLUSTER INFO | | |
+CLUSTER KEYSLOT key | 返回key对应的槽值 | O(N) |
+CLUSTER MEET ip port | 将其它节点加入到集群中 | O(1) |
+CLUSTER NODES | | | 
+CLUSTER REPLICATE node-id | 设置从节点 | |
+CLUSTER RESET [HARD &#124; SOFT] | | |
+CLUSTER SAVECONFIG | | |
+CLUSTER SET-CONFIG-EPOCH config-epoch | | |
+CLUSTER SETSLOT slot IMPORTING &#124; MIGRATING &#124; STABLE &#124; NODE [node-id] | 用于重新分片 | |
+CLUSTER SLAVES node-id | | |
+CLUSTER SLOTS | | |
+MIGRATE host port key &#124; "" destination-db timeout [COPY] [REPLACE] [KEYS key [key ...]] | 原子操作 将key从一个数据库转移到另一个数据库| O(N) | 在源数据库上执行DUMP+DEL 在目标数据库上执行RESTORE 
 
+#### 性能优化相关
 命令 | 解释 | 时间复杂度 | 特别说明
 -----|-----|----------|---------
 INFO [section] | 返回服务器的信息 | 
+
+#### 发布订阅
+命令 | 解释 | 时间复杂度 | 特别说明
+-----|-----|----------|---------
+PSUBSCRIBE pattern [pattern ...]| 使客户端订阅一个或多个模式 | O(N) |
+PUBLISH channel message | 在某个频道上发布一条消息 | O(N+M) |
+PUBSUB | 自省命令，监测发布订阅系统的状态 | |
+PUNSUBSCRIBE [pattern [pattern ...]]| 使客户端退订一个或多个模式 | O(N+M) |
+SUBSCRIBE channel [channel ...]| 使客户端订阅一个或多个频道 | O(N) |
+UNSUBSCRIBE [channel [channel ...]]| 使客户端退订一个或多个频道 | O(N) |
+
+#### 其它命令
+
+命令 | 解释 | 时间复杂度 | 特别说明
+-----|-----|----------|---------
+DUMP key| 序列化关键字指定的值 | |
+RESTORE key ttl serialized-value [REPLACE] | 使用序列化的值创建key | |
+SORT key [BY pattern] [LIMIT offset count] [GET pattern [GET pattern]] [ASC &#124; DESC] [ALPHA] [STORE destination]| 排序 | |
+TYPE key | 返回key指定的值的类型，可能是string, list, set, zset, hash | O(1)
+OBJECT sumcommand [arguments [arguments ...]] | 查看与key相关的redis对象的内部 | O(1)

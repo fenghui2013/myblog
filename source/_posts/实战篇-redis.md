@@ -21,7 +21,9 @@ make install
 redis-server path/to/redis.conf              # 服务启动程序
 redis-sentinel path/to/sentinel.conf         # 启动一个哨兵节点
 redis-cli                                    # 客户端程序
+    -c # 集群模式
 redis-benchmark                              # 性能测试工具
+redis-trib.rb                                # ruby编写的集群管理工具
 ```
 
 redis.conf
@@ -83,6 +85,10 @@ min-slaves-to-write 3             # 可用的slave最小数量
 min-slaves-max-lag 10             # slave最大的交互时间间隔
 # slave-announce-ip 5.5.5.5       
 # slave-announce-port 1234        # 防止端口转发和NAT
+
+######## REDIS CLUSER ########
+# cluster-enabled yes             # 是否开启集群模式
+# cluster-node-timeout 15000      # 节点超时时间
 
 ######## ADVANCED CONFIG ########
 

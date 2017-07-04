@@ -8,12 +8,12 @@ tags:
 函数 | 解释 | 特别说明
 -----|----|-------
 sorted | 排序 | python2 和 python3不同，需要functools.cmp\_to\_key
-
+zip | 聚合n个可迭代的对象为一个可迭代对象 | zip(['A', 'B'], [1, 2], ['a', 'b']) => (('A', 1, 'a'), ('B', 2, 'b'))
 
 
 ```
+-------- sorted --------
 l = [2, 5, 1, 3, 6, 8, 4]
-
 
 def mycmp(x, y):
     print(x, y)
@@ -26,4 +26,7 @@ sorted_l = sorted(l, key=functools.cmp_to_key(mycmp))  # 3中可执行
 
 print(l)
 print(sorted_l)
+
+-------- zip --------
+list(zip('ABCD', '1234', 'abcd'))
 ```

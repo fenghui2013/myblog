@@ -18,6 +18,7 @@ tags:
 ```
 # 管理函数
 def decorator(F):
+
     # process functions F
     return F
 

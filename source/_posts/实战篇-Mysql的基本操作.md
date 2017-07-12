@@ -143,7 +143,7 @@ show global variables like "%timeout%"  #查看所有与超时相关的全局变
 #启动服务后
 mysql
 use mysql;
-update user set password=password("新密码") where user="root";
+update user set password=password("新密码") where user="root"; # 5.7.18不可用
 create user username identified by 'password';
 grant all on *.* to username@'%';
 
@@ -172,3 +172,8 @@ explain sql                       # 查看执行计划
 show index from tbl_name \G       # 查看索引
 analyze table tbl_name;           # 优化表
 ```
+
+
+### 问题排查
+
+[ERROR 1819](http://www.cnblogs.com/ivictor/p/5142809.html)

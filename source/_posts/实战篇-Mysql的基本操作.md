@@ -163,6 +163,18 @@ create table ab (
 ) engine=innodb default charset=utf8 auto_increment=1;
 ```
 
+#### 查询
+
+```
+select col_name, ...
+from table_name1, ...({left join | right join | inner join on ...})
+where condition1, ...
+order_by col_name
+limit offset count
+group by col_name
+having condition1, ...
+```
+
 ### 优化
 
 ```

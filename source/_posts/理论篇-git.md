@@ -152,3 +152,9 @@ git checkout [-p|--patch] [<tree-ish>] [--] [<paths>...] # 检出其它提交的
 ```
 git branch [--set-upstream | --track | --no-track] [-l] [-f] <branchname> [<start-point>]  # 根据某个提交创建分支
 ```
+
+### reference
+
+[git中文版](https://www.git-scm.com/book/zh/v2)
+
+[阮一峰网站](http://www.ruanyifeng.com/blog/2014/06/git_remote.html)
